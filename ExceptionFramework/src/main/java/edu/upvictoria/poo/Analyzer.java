@@ -1,9 +1,6 @@
 package edu.upvictoria.poo;
 
-import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
-import edu.upvictoria.poo.exceptions.DataTypeNotFoundException;
-import edu.upvictoria.poo.exceptions.DatabaseNotSetException;
-import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
+import edu.upvictoria.poo.exceptions.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,7 +13,7 @@ public class Analyzer {
     private final ArrayList<String> keywords = new ArrayList<>();
     private final ArrayList<String> dataTypes = new ArrayList<>();
     private final ArrayList<String> dataModifiers = new ArrayList<>();
-    private final ArrayList<String> relations = new ArrayList<>();
+    private final ArrayList<String> constraints = new ArrayList<>();
 
     private final SQL sql = new SQL();
     private Database database = new Database();
@@ -42,8 +39,9 @@ public class Analyzer {
         dataModifiers.add("NOT");
         dataModifiers.add("AS");
 
-        relations.add("PRIMARY KEY");
-        relations.add("FOREIGN KEY");
+        constraints.add("NOT NULL");
+        constraints.add("PRIMARY KEY");
+        constraints.add("FOREIGN KEY");
 
         dataTypes.add("NUMBER");
         dataTypes.add("VARCHAR");
@@ -56,75 +54,74 @@ public class Analyzer {
     }
 
     public void analyzeSyntax(String line) throws Exception {
+        line = line.replaceAll("\n"," ");
         boolean found = false;
 
         for(String keyword : keywords){
-            if(line.startsWith(keyword) && (line.charAt(keyword.length()) == ' ' || line.charAt(keyword.length()) == ';')){
-                found = true;
-
+            if (line.startsWith(keyword)) {
                 try {
                     //lets get funky
                     switch (keyword) {
                         case "USE":
                             File dbFile = sql.handleUse(line, keyword);
                             refreshDB(dbFile);
-                            break;
+                            return;
 
                         case "SHOW TABLES":
-                            if(database.getDbFile() == null){
+                            if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
                             refreshDB(this.database.getDbFile());
                             this.database.printTables();
-                            break;
+                            return;
 
                         case "CREATE TABLE":
-                            if(database.getDbFile() == null){
+                            if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
                             sql.handleCreateTable(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
-                            break;
+                            return;
 
                         case "CREATE DATABASE":
                             sql.handleCreateDatabase(line, keyword);
-                            break;
+                            return;
 
                         case "DROP TABLE":
-                            if(database.getDbFile() == null){
+                            if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
                             sql.handleDropTable(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
-                            break;
+                            return;
 
                         case "INSERT INTO":
-                            if(database.getDbFile() == null){
+                            if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
                             sql.handleInsertInto(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
-                            break;
+                            return;
 
                         case "DELETE FROM":
                             sql.handleDeleteFrom(line, keyword);
-                            break;
+                            return;
 
                         case "UPDATE":
                             sql.handleUpdate(line, keyword);
-                            break;
+                            return;
 
                         case "SELECT":
-                            if(database.getDbFile() == null){
+                            if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
-                            sql.handleSelect(line,keyword,database);
-                            break;
+                            sql.handleSelect(line, keyword, database);
+                            return;
                     }
 
                 } catch (StringIndexOutOfBoundsException e) {
@@ -148,10 +145,13 @@ public class Analyzer {
                 } catch (ColumnDoesNotMatch e) {
                     throw new ColumnDoesNotMatch(e.getMessage());
 
+                } catch (SQLSyntaxException e) {
+                    throw new SQLSyntaxException(e.getMessage());
+
                 } catch (IOException e) {
                     throw new IOException(e.getMessage());
 
-                } catch (Exception e){
+                } catch (Exception e) {
                     throw new Exception("AN ERROR OCURRED WHILE EXECUTING COMMAND: " + e.getMessage());
                 }
             }
@@ -170,7 +170,11 @@ public class Analyzer {
         return dataTypes;
     }
 
-    public void refreshDB(File file){
+    public ArrayList<String> getConstraints() {
+        return constraints;
+    }
+
+    public void refreshDB(File file) throws FileSystemException{
         this.database = new Database();
         this.database.setDbFile(file);
         this.database.retrieveTables();

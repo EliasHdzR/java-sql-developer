@@ -26,20 +26,16 @@ public class App {
             System.out.print("$> ");
             try {
                 line = reader.consoleReader(analyzer);
-            } catch (SQLSyntaxException e){
-                System.out.println(e.getMessage() + "\n");
+            } catch (Exception e){
+                System.out.println("ERR: " + e.getMessage() + "\n");
                 continue;
             }
 
-            /*try{
-                for(String line : lines){
-                    analyzer.analyzeSyntax(line, lines.size());
-                }
-            } catch (IOException e){
-                System.out.println("ERR: Error en la Sentencia: " + e.getMessage() + "\n");
+            try{
+                analyzer.analyzeSyntax(line);
             } catch (Exception e){
                 System.out.println("ERR: " + e.getMessage() + "\n");
-            }*/
+            }
         }
     }
 }

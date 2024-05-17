@@ -23,47 +23,6 @@ public class SQL {
         return line;
     }
 
-    public ArrayList<String> splitValues(String line) throws DataTypeNotFoundException, StringIndexOutOfBoundsException {
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> dataTypes = analyzer.getDataTypes();
-        ArrayList<String> columns = new ArrayList<>();
-        String tableName;
-        boolean foundDataType = false;
-
-        try {
-            tableName = line.substring(0, line.indexOf("(")).trim();
-            line = line.substring(tableName.length()).trim();
-
-            if(!(line.startsWith("(") && line.endsWith(")"))){
-                throw new StringIndexOutOfBoundsException();
-            }
-
-            line = line.substring(line.indexOf("(")+1,line.indexOf(")"));
-
-            columns.add(tableName);
-            String[] values = line.split(",");
-            for(String value : values){
-                for(String dataType : dataTypes){
-                    if(value.contains(dataType)){
-                        foundDataType = true;
-                        break;
-                    }
-                }
-
-                if(!foundDataType){
-                    throw new DataTypeNotFoundException("DATA TYPE NOT FOUND IN LINE " + value);
-                }
-
-                value = value.substring(0,value.indexOf(" ")).trim();
-                columns.add(value);
-            }
-        } catch (StringIndexOutOfBoundsException e){
-            throw new StringIndexOutOfBoundsException("TABLE NAME NOT FOUND, MISSING VALUES OR MISSING EXPRESSION");
-        }
-
-        return columns;
-    }
-
     public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
         String givenPath;
 
@@ -90,9 +49,76 @@ public class SQL {
         return database;
     }
 
+    public ArrayList<Column> splitValues(String line) throws DataTypeNotFoundException, StringIndexOutOfBoundsException {
+        Analyzer analyzer = new Analyzer();
+        ArrayList<String> dataTypes = analyzer.getDataTypes();
+        ArrayList<String> constraints = analyzer.getConstraints();
+
+        ArrayList<Column> columns = new ArrayList<>();
+        String tableName, cName, cDataType = null, cConstraint = null;
+        boolean foundDataType;
+        boolean foundConstraint;
+
+        try {
+            tableName = line.substring(0, line.indexOf("(")).trim();
+            Column KKColumn = new Column(tableName,null,null);
+            columns.add(KKColumn);
+
+            line = line.substring(tableName.length()).trim();
+            if(!(line.startsWith("(") && line.endsWith(")"))){
+                throw new StringIndexOutOfBoundsException();
+            }
+            line = line.substring(line.indexOf("(")+1,line.indexOf(")")).trim();
+            line = line.replaceAll(", ", ",");
+
+            String[] values = line.split(",");
+
+            for(String value : values){
+                foundDataType = false;
+                String[] parts = value.split(" ");
+                cName = parts[0].trim();
+
+                //BUSCAMOS EL TIPO DE DATO AQUI
+                for(String dataType : dataTypes){
+                    if(value.contains(dataType)){
+                        foundDataType = true;
+                        cDataType = dataType;
+                        break;
+                    }
+                }
+                if(!foundDataType){
+                    throw new DataTypeNotFoundException("DATA TYPE NOT FOUND IN LINE " + value);
+                }
+
+                //BUSCAMOS SI TIENE CONSTRAINT DEFINIDA AQUI
+                if(parts.length > 2){
+                    foundConstraint = false;
+
+                    for(String constraint : constraints){
+                        if(value.contains(constraint)){
+                            foundConstraint = true;
+                            cConstraint = constraint;
+                            break;
+                        }
+                    }
+                    if(!foundConstraint){
+                        throw new DataTypeNotFoundException("CONSTRAINT NOT FOUND IN LINE " + value);
+                    }
+                }
+
+                Column column = new Column(cName,cDataType,cConstraint);
+                columns.add(column);
+            }
+        } catch (StringIndexOutOfBoundsException e){
+            throw new StringIndexOutOfBoundsException("TABLE NAME NOT FOUND, MISSING VALUES OR MISSING EXPRESSION");
+        }
+
+        return columns;
+    }
+
     public void handleCreateTable(String line, String keyword, Database database) throws IOException {
         String cleanedLine;
-        ArrayList<String> columns;
+        ArrayList<Column> columns;
 
         try {
             cleanedLine = clean(line, keyword);
@@ -108,11 +134,19 @@ public class SQL {
         Table newTable = new Table(tableFile, columns);
 
         database.addTable(newTable);
-        newTable.appendData(columns);
+
+        ArrayList<String> rows = new ArrayList<>();
+
+        for(Column column : columns){
+            String data = column.getName() +" "+ column.getType() +" "+ column.getConstraint();
+            rows.add(data);
+        }
+
+        newTable.appendData(rows);
     }
 
-    private static File getFile(Database database, ArrayList<String> columns) throws IOException {
-        File tableFile = new File(database.getDbFile().getAbsolutePath() + "/" + columns.get(0) + ".csv");
+    private static File getFile(Database database, ArrayList<Column> columns) throws IOException {
+        File tableFile = new File(database.getDbFile().getAbsolutePath() + "/" + columns.get(0).getName() + ".csv");
 
         if(tableFile.exists()){
             throw new FileAlreadyExistsException("NAME ALREADY IN USE: " + tableFile.getAbsolutePath());
@@ -305,7 +339,7 @@ public class SQL {
 
         try{
             cleanedLine = clean(line, keyword);
-            selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1);
+            selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
 
             if(cleanedLine.contains("WHERE")){
                 selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE"));
@@ -354,3 +388,7 @@ public class SQL {
         }
     }
 }
+
+
+// TODO: CREAR EL WHERE
+// TODO: CHECAR EL SELECT

@@ -9,14 +9,14 @@ public class Database {
     private File dbFile;
     private final ArrayList<Table> tables = new ArrayList<>();
 
-    public void retrieveTables() throws RuntimeException {
+    public void retrieveTables() throws FileSystemException {
         try {
             for(File file : Objects.requireNonNull(this.dbFile.listFiles())){
                 Table table = new Table(file);
                 addTable(table);
             }
         } catch (FileSystemException e) {
-            throw new RuntimeException(e.getMessage());
+            throw new FileSystemException(e.getMessage());
         }
 
     }

@@ -5,9 +5,7 @@ import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Reader {
     public String consoleReader(Analyzer analyzer) throws SQLSyntaxException {

@@ -17,13 +17,14 @@ import java.io.FileWriter;
 
 public class Table {
     private final String tableName;
-    private final File tableFile;
+    private File tableFile;
+    private final ArrayList<Column> columns;
     ArrayList<ArrayList<String>> data =  new ArrayList<>();
 
     //para crear nueva tabla
-    public Table(File tableFile, ArrayList<String> data){
+    public Table(File tableFile, ArrayList<Column> columns){
         this.tableFile = tableFile;
-        this.data.add(data);
+        this.columns = columns;
         int i = tableFile.getName().indexOf('.');
         this.tableName = tableFile.getName().substring(0,i);
     }
@@ -31,9 +32,11 @@ public class Table {
     //para recuperar tabla ya existente
     public Table(File tableFile) throws FileSystemException {
         this.tableFile = tableFile;
-        int i = tableFile.getName().indexOf('.');
-        this.tableName = tableFile.getName().substring(0,i);
+        this.columns = new ArrayList<>();
+        int a = tableFile.getName().indexOf('.');
+        this.tableName = tableFile.getName().substring(0,a);
 
+        boolean columnsId = true;
         Charset charset = StandardCharsets.UTF_8;
 
         try {
@@ -43,11 +46,24 @@ public class Table {
             while((line = br.readLine()) != null){
                 String[] stringValues = line.split(",");
 
+                if(columnsId){
+                    String[] columns = stringValues[0].split(" ");
+
+                    for(int i = 0; i < columns.length; i+=4){
+                        Column column = new Column(columns[i], columns[i+1], columns[i+2] + " " + columns[i+3]);
+                        this.columns.add(column);
+                    }
+
+                    columnsId = false;
+                }
+
                 ArrayList<String> objectValues = new ArrayList<>(Arrays.asList(stringValues));
                 this.data.add(objectValues);
             }
         } catch (IOException e){
-            throw new FileSystemException("AN ERROR OCURRED WHILE OPENING FILE");
+            throw new FileSystemException("TABLE DOES NOT EXIST");
+        } catch (RuntimeException e){
+            throw new FileSystemException("TABLE FORMAT ERROR");
         }
     }
 
@@ -55,8 +71,16 @@ public class Table {
         return tableFile;
     }
 
+    public void setTableFile(File tableFile) {
+        this.tableFile = tableFile;
+    }
+
     public String getTableName() {
         return tableName;
+    }
+
+    public ArrayList<Column> getColumns() {
+        return columns;
     }
 
     public void appendData(ArrayList<String> rows) throws IOException {
