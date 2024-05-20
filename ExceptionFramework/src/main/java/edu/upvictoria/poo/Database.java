@@ -33,7 +33,7 @@ public class Database {
         return tables;
     }
 
-    public void printTables(){
+    public void printTableNames(){
         for(Table table : this.tables){
             System.out.println("\t" + table.getTableName());
         }

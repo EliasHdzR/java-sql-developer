@@ -17,9 +17,9 @@ import java.io.FileWriter;
 
 public class Table {
     private final String tableName;
-    private File tableFile;
+    private final File tableFile;
     private final ArrayList<Column> columns;
-    ArrayList<ArrayList<String>> data =  new ArrayList<>();
+    private final ArrayList<ArrayList<Object>> data =  new ArrayList<>();
 
     //para crear nueva tabla
     public Table(File tableFile, ArrayList<Column> columns){
@@ -30,12 +30,12 @@ public class Table {
     }
 
     //para recuperar tabla ya existente
-    public Table(File tableFile) throws FileSystemException {
+        public Table(File tableFile) throws FileSystemException {
         this.tableFile = tableFile;
-        this.columns = new ArrayList<>();
         int a = tableFile.getName().indexOf('.');
         this.tableName = tableFile.getName().substring(0,a);
 
+        this.columns = new ArrayList<>();
         boolean columnsId = true;
         Charset charset = StandardCharsets.UTF_8;
 
@@ -44,21 +44,25 @@ public class Table {
             String line;
 
             while((line = br.readLine()) != null){
-                String[] stringValues = line.split(",");
+                String[] rowValues = line.split(",");
 
                 if(columnsId){
-                    String[] columns = stringValues[0].split(" ");
+                    for (String rowValue : rowValues) {
+                        String[] columnData = rowValue.trim().split(" ");
+                        String constraint = null;
 
-                    for(int i = 0; i < columns.length; i+=4){
-                        Column column = new Column(columns[i], columns[i+1], columns[i+2] + " " + columns[i+3]);
-                        this.columns.add(column);
+                        if (columnData.length > 2) {
+                            constraint = columnData[2] + " " + columnData[3];
+                        }
+                        Column column = new Column(columnData[0], columnData[1], constraint);
+                        columns.add(column);
                     }
 
                     columnsId = false;
+                } else {
+                    ArrayList<Object> objectValues = new ArrayList<>(Arrays.asList(rowValues));
+                    this.data.add(objectValues);
                 }
-
-                ArrayList<String> objectValues = new ArrayList<>(Arrays.asList(stringValues));
-                this.data.add(objectValues);
             }
         } catch (IOException e){
             throw new FileSystemException("TABLE DOES NOT EXIST");
@@ -71,10 +75,6 @@ public class Table {
         return tableFile;
     }
 
-    public void setTableFile(File tableFile) {
-        this.tableFile = tableFile;
-    }
-
     public String getTableName() {
         return tableName;
     }
@@ -83,19 +83,94 @@ public class Table {
         return columns;
     }
 
-    public void appendData(ArrayList<String> rows) throws IOException {
+    public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws IOException {
+        ArrayList<Object> newData = new ArrayList<>();
+
+        for(int i = 0; i < this.columns.size(); i++){
+            newData.add("\0");
+        }
+
+        int j = 0;
+
+        for(String columnName : columnNames){
+            for(int i = 0; i < this.columns.size(); i++){
+                Column aux = this.columns.get(i);
+                if(columnName.equals(aux.getName())){
+                    newData.set(i,data.get(j));
+                    j++;
+                }
+            }
+
+            if(j == data.size()){
+                break;
+            }
+        }
+
+        this.data.add(newData);
+        writeDataToFile();
+    }
+
+    public void writeDataToFile() throws IOException {
         Charset charset = StandardCharsets.UTF_8;
         StringBuilder line = new StringBuilder();
 
         try{
-            FileWriter fw = new FileWriter(this.tableFile, charset, true);
+            FileWriter fw = new FileWriter(this.tableFile, charset);
             BufferedWriter bw = new BufferedWriter(fw);
             PrintWriter out = new PrintWriter(bw);
 
-            for(int i = 0; i < rows.size(); i++){
-                line.append(rows.get(i));
+            for(int i = 0; i < this.columns.size(); i++){
+                Column column = this.columns.get(i);
+                String constraint;
+                if(column.getConstraint() == null){
+                    constraint = "\0";
+                } else {
+                    constraint = column.getConstraint();
+                }
 
-                if(i != (rows.size() - 1)){
+                line.append(column.getName()).append(" ").append(column.getType()).append(" ").append(constraint);
+
+                if(i != this.columns.size()-1){
+                    line.append(",");
+                }
+
+            }
+
+            out.println(line);
+            out.flush();
+            line = new StringBuilder();
+
+            for(ArrayList<Object> row : this.data){
+                for(int i = 0; i < row.size(); i++){
+                    line.append(row.get(i));
+
+                    if(i != row.size()-1){
+                        line.append(",");
+                    }
+                }
+                out.println(line);
+                out.flush();
+                line = new StringBuilder();
+            }
+        } catch (IOException e) {
+            throw new IOException("TABLE DOES NOT EXISTS");
+        }
+    }
+
+    //PARA LA PRIMERA INSERCION DE NOMBRES DE COLUMNA EN LA TABLA
+    public void writeDataToFile(ArrayList<String> rowData) throws IOException {
+        Charset charset = StandardCharsets.UTF_8;
+        StringBuilder line = new StringBuilder();
+
+        try{
+            FileWriter fw = new FileWriter(this.tableFile, charset);
+            BufferedWriter bw = new BufferedWriter(fw);
+            PrintWriter out = new PrintWriter(bw);
+
+            for(int i = 0; i < rowData.size(); i++){
+                line.append(rowData.get(i));
+
+                if(i != (rowData.size() - 1)){
                     line.append(",");
                 }
             }
@@ -103,13 +178,13 @@ public class Table {
             out.println(line);
             out.flush();
         } catch (IOException e) {
-            throw new IOException(e.getMessage());
+            throw new IOException("TABLE DOES NOT EXISTS");
         }
     }
 
     public void printData(){
-        for (ArrayList<String> datum : data) {
-            for (String object : datum) {
+        for (ArrayList<Object> datum : data) {
+            for (Object object : datum) {
                 System.out.print("| " + object + "\t");
             }
             System.out.println("|");
@@ -129,7 +204,7 @@ public class Table {
             }
         }
 
-        for(ArrayList<String> datum : data){
+        for(ArrayList<Object> datum : data){
             for(int columnIndex : columnIndexes){
                 System.out.print(datum.get(columnIndex) + " | ");
             }
@@ -138,6 +213,12 @@ public class Table {
     }
 
     public ArrayList<String> getColumnsName(){
-        return data.get(0);
+        ArrayList<String> columnsName = new ArrayList<>();
+
+        for(Column column : columns){
+            columnsName.add(column.getName());
+        }
+
+        return columnsName;
     }
 }

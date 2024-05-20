@@ -73,7 +73,7 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            this.database.printTables();
+                            this.database.printTableNames();
                             return;
 
                         case "CREATE TABLE":
@@ -81,6 +81,7 @@ public class Analyzer {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
+                            refreshDB(this.database.getDbFile());
                             sql.handleCreateTable(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
                             return;
@@ -94,6 +95,7 @@ public class Analyzer {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
+                            refreshDB(this.database.getDbFile());
                             sql.handleDropTable(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
                             return;
@@ -103,16 +105,25 @@ public class Analyzer {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
+                            refreshDB(this.database.getDbFile());
                             sql.handleInsertInto(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
                             return;
 
                         case "DELETE FROM":
+                            if (database.getDbFile() == null) {
+                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                            }
+
+                            refreshDB(this.database.getDbFile());
                             sql.handleDeleteFrom(line, keyword);
+                            refreshDB(this.database.getDbFile());
                             return;
 
                         case "UPDATE":
+                            refreshDB(this.database.getDbFile());
                             sql.handleUpdate(line, keyword);
+                            refreshDB(this.database.getDbFile());
                             return;
 
                         case "SELECT":
@@ -120,6 +131,7 @@ public class Analyzer {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
+                            refreshDB(this.database.getDbFile());
                             sql.handleSelect(line, keyword, database);
                             return;
                     }

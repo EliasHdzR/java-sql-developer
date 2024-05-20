@@ -2,6 +2,7 @@ package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.DataTypeNotFoundException;
+import edu.upvictoria.poo.exceptions.DuplicateEntryException;
 import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
 
 import java.io.*;
@@ -106,11 +107,12 @@ public class SQL {
                     }
                 }
 
-                Column column = new Column(cName,cDataType,cConstraint);
+                Column column = new Column(cName.trim(),cDataType.trim(),cConstraint);
                 columns.add(column);
+                cConstraint = "\0";
             }
         } catch (StringIndexOutOfBoundsException e){
-            throw new StringIndexOutOfBoundsException("TABLE NAME NOT FOUND, MISSING VALUES OR MISSING EXPRESSION");
+            throw new StringIndexOutOfBoundsException("TABLE NAME NOT FOUND OR MISSING VALUES OR MISSING EXPRESSION");
         }
 
         return columns;
@@ -119,6 +121,7 @@ public class SQL {
     public void handleCreateTable(String line, String keyword, Database database) throws IOException {
         String cleanedLine;
         ArrayList<Column> columns;
+        ArrayList<String> duplicates = new ArrayList<>();
 
         try {
             cleanedLine = clean(line, keyword);
@@ -129,20 +132,31 @@ public class SQL {
             throw new DataTypeNotFoundException(e.getMessage());
         }
 
+        for (int i = 0; i < columns.size(); i++) {
+            for (int j = i + 1; j < columns.size(); j++) {
+                if (columns.get(i).getName().equals(columns.get(j).getName())) {
+                    duplicates.add(columns.get(i).getName());
+                    break;
+                }
+            }
+        }
+
+        if(!duplicates.isEmpty()){
+            throw new DuplicateEntryException("DUPLICATE COLUMNS SPECIFIED IN TABLE CREATION");
+        }
+
         File tableFile = getFile(database, columns);
         columns.remove(0);
         Table newTable = new Table(tableFile, columns);
 
-        database.addTable(newTable);
-
-        ArrayList<String> rows = new ArrayList<>();
-
-        for(Column column : columns){
+        ArrayList<String> rowData = new ArrayList<>();
+        for(Column column : newTable.getColumns()){
             String data = column.getName() +" "+ column.getType() +" "+ column.getConstraint();
-            rows.add(data);
+            rowData.add(data);
         }
 
-        newTable.appendData(rows);
+        newTable.writeDataToFile(rowData);
+        database.addTable(newTable);
     }
 
     private static File getFile(Database database, ArrayList<Column> columns) throws IOException {
@@ -245,9 +259,13 @@ public class SQL {
                 }
 
                 line = line.substring(line.indexOf("(")+1,line.indexOf(")"));
-                columns.add(tableName);
+                columns.add(tableName.trim());
 
                 String[] values = line.split(",");
+                for(int i = 0; i < values.length; i++){
+                    values[i] = values[i].trim();
+                }
+
                 columns.addAll(Arrays.asList(values));
 
                 return columns;
@@ -275,7 +293,9 @@ public class SQL {
     public void handleInsertInto(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException  {
         String cleanedLine, cleanedLine_v2, cleanedLine_v3;
         ArrayList<String> insertionColumns, insertionData;
-        boolean tableExists = false;
+        ArrayList<Column> tableColumns = new ArrayList<>();
+        Table table = null;
+        boolean tableExists = false, columnFound = false;
 
         try {
             cleanedLine = clean(line, keyword);
@@ -300,22 +320,12 @@ public class SQL {
         }
 
         ArrayList<Table> tables = database.getTables();
-        for(Table table : tables) {
-            if(table.getTableName().equals(insertionColumns.get(0))){
+        for(Table tableF : tables) {
+            if(tableF.getTableName().equals(insertionColumns.get(0))){
                 tableExists = true;
                 insertionColumns.remove(0);
-
-                if(table.getColumnsName().size() != insertionColumns.size() && table.getColumnsName().size() != insertionData.size()){
-                    throw new InsuficientDataProvidedException("INSUFICIENT DATA PROVIDED");
-                }
-
-                for(int i = 0; i < table.getColumnsName().size(); i++){
-                    if(!(table.getColumnsName().get(i).equals(insertionColumns.get(i)))){
-                        throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH:" + insertionColumns.get(i));
-                    }
-                }
-
-                table.appendData(insertionData);
+                table = tableF;
+                tableColumns = tableF.getColumns();
                 break;
             }
         }
@@ -323,6 +333,24 @@ public class SQL {
         if(!tableExists){
             throw new NoSuchFileException("TABLE DOES NOT EXISTS");
         }
+
+        for(String insertionColumn : insertionColumns){
+            for(Column tableColumn : tableColumns){
+                if(tableColumn.getName().equals(insertionColumn)){
+                    columnFound = true;
+                    break;
+                }
+
+            }
+
+            if(!columnFound){
+                throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH: " + insertionColumn);
+            }
+
+            columnFound = false;
+        }
+
+        table.appendDataToTable(insertionData,insertionColumns);
     }
 
     public void handleDeleteFrom(String line, String keyword){
