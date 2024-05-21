@@ -33,10 +33,8 @@ public class Analyzer {
         keywords.add("FROM");
         keywords.add("WHERE");
 
-        dataModifiers.add("NULL");
         dataModifiers.add("AND");
         dataModifiers.add("OR");
-        dataModifiers.add("NOT");
         dataModifiers.add("AS");
 
         constraints.add("NOT NULL");
@@ -184,6 +182,10 @@ public class Analyzer {
 
     public ArrayList<String> getConstraints() {
         return constraints;
+    }
+
+    public ArrayList<String> getDataModifiers() {
+        return dataModifiers;
     }
 
     public void refreshDB(File file) throws FileSystemException{

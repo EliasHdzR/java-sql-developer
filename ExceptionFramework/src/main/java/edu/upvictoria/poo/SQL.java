@@ -279,9 +279,14 @@ public class SQL {
                 throw new StringIndexOutOfBoundsException();
             }
 
-            line = line.substring(line.indexOf("(") + 1,line.indexOf(")"));
+            line = line.substring(line.indexOf("(") + 1,line.indexOf(")")).trim();
 
             String[] values = line.split(",");
+
+            for(int i = 0; i < values.length; i++){
+                values[i] = values[i].trim();
+            }
+
             columns.addAll(Arrays.asList(values));
 
             return columns;
@@ -370,7 +375,7 @@ public class SQL {
             selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
 
             if(cleanedLine.contains("WHERE")){
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE"));
+                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
             } else {
                 selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
             }
@@ -390,10 +395,10 @@ public class SQL {
                 tableExists = true;
 
                 if(!selectedColumns.equals("*")){
-                    for(String tableCol : table.getColumnsName()){
-                        for(String selecCol : columns) {
-                            if(tableCol.equals(selecCol)){
-                                showingCol.add(tableCol);
+                    for(String tableColName : table.getColumnsName()){
+                        for(String selectColName : columns) {
+                            if(tableColName.equals(selectColName)){
+                                showingCol.add(tableColName);
                             }
                         }
                     }
@@ -415,8 +420,12 @@ public class SQL {
             throw new NoSuchFileException("TABLE DOES NOT EXISTS");
         }
     }
+
+    public void handleWhere(Analyzer analyzer){
+        ArrayList<String> dataModifiers = analyzer.getDataModifiers();
+    }
 }
 
-
+// TODO: COMPROBRAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
+// TODO: COMPROBRAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
 // TODO: CREAR EL WHERE
-// TODO: CHECAR EL SELECT

@@ -185,7 +185,7 @@ public class Table {
     public void printData(){
         for (ArrayList<Object> datum : data) {
             for (Object object : datum) {
-                System.out.print("| " + object + "\t");
+                System.out.print("| " + object.toString() + "\t");
             }
             System.out.println("|");
             for (int i = 0; i < datum.size(); i++) {
@@ -196,19 +196,34 @@ public class Table {
     }
 
     public void printData(ArrayList<String> columns) {
-        ArrayList<Integer> columnIndexes = new ArrayList<>();
-        for(String column : columns){
-            int i = data.get(0).indexOf(column);
-            if (i != -1) {
-                columnIndexes.add(i);
-            }
+        for(String colName : columns){
+            System.out.print("| " + colName + "\t");
         }
+        System.out.println("|");
+        for (int i = 0; i < columns.size(); i++) {
+            System.out.print("+------------");
+        }
+        System.out.println("+");
 
-        for(ArrayList<Object> datum : data){
-            for(int columnIndex : columnIndexes){
-                System.out.print(datum.get(columnIndex) + " | ");
+        // imprimirmos datos
+        for (ArrayList<Object> datum : data) {
+            int j = 0;
+            for (int i = 0; i < datum.size(); i++) {
+                if(this.columns.get(i).getName().equals(columns.get(j))){
+                    Object object = datum.get(i);
+                    System.out.print("| " + object.toString() + "\t");
+                    j++;
+
+                    if(j == columns.size()){
+                        break;
+                    }
+                }
             }
-            System.out.println();
+            System.out.println("|");
+            for (int i = 0; i < columns.size(); i++) {
+                System.out.print("+------------");
+            }
+            System.out.println("+");
         }
     }
 
