@@ -1,14 +1,13 @@
 package edu.upvictoria.poo;
 
-import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
-import edu.upvictoria.poo.exceptions.DataTypeNotFoundException;
-import edu.upvictoria.poo.exceptions.DuplicateEntryException;
-import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
+import edu.upvictoria.poo.exceptions.*;
 
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SQL {
     public String clean(String line, String keyword) throws StringIndexOutOfBoundsException {
@@ -364,10 +363,12 @@ public class SQL {
     public void handleUpdate(String line, String keyword){
     }
 
-    public void handleSelect(String line, String keyword, Database database) throws StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
+    public void handleSelect(String line, String keyword, Database database) throws SQLSyntaxException,
+            StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
         ArrayList<String> columns = new ArrayList<>();
         ArrayList<String> showingCol = new ArrayList<>();
-        String cleanedLine, selectedColumns, selectedTable;
+        String cleanedLine, selectedColumns, selectedTable, whereLine = null;
+        ArrayList<String> whereTokens = new ArrayList<>();
         boolean tableExists = false;
 
         try{
@@ -376,6 +377,7 @@ public class SQL {
 
             if(cleanedLine.contains("WHERE")){
                 selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
+                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
             } else {
                 selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
             }
@@ -393,6 +395,11 @@ public class SQL {
         for(Table table : tables) {
             if (table.getTableName().equals(selectedTable)) {
                 tableExists = true;
+
+                if(whereLine != null){
+                    whereTokens = getWhereTokens(whereLine,table);
+                    whereTokens = Where.infixToPostfix(whereTokens);
+                }
 
                 if(!selectedColumns.equals("*")){
                     for(String tableColName : table.getColumnsName()){
@@ -421,8 +428,81 @@ public class SQL {
         }
     }
 
-    public void handleWhere(Analyzer analyzer){
-        ArrayList<String> dataModifiers = analyzer.getDataModifiers();
+    public ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
+        Analyzer analyzer = new Analyzer();
+        ArrayList<String> operators = analyzer.getOperators();
+        ArrayList<String> whereTokens = new ArrayList<>();
+        String value;
+
+        ArrayList<String> homunculus = new ArrayList<>(operators);
+        homunculus.addAll(table.getColumnsName());
+        boolean foundKeyword;
+
+        String format1 = "^'.+'";
+        String format2 = "^\\d*\\s+";
+        String format3 = "^\\d*$";
+        Pattern pattern1 = Pattern.compile(format1);
+        Pattern pattern2 = Pattern.compile(format2);
+        Pattern pattern3 = Pattern.compile(format3);
+        Matcher matcher1, matcher2, matcher3;
+
+        line = line.replaceAll("<>","!=");
+        line = line.replaceAll("^=","!=");
+
+        try {
+            for(int i = 0; i < homunculus.size(); i++){
+                String homunculee = homunculus.get(i);
+                if(line.startsWith(homunculee)){
+                    whereTokens.add(homunculee);
+                    line = line.substring(line.indexOf(homunculee) + homunculee.length()).trim();
+                    i = -1;
+                    continue;
+                }
+
+                if(line.startsWith("NULL")){
+                    whereTokens.add("\0");
+                    line = line.substring(line.indexOf("NULL") + "NULL".length()).trim();
+                    i = -1;
+                    continue;
+                }
+
+                matcher1 = pattern1.matcher(line);
+                if(matcher1.find()){
+                    line = line.substring(1);
+                    value = line.substring(0, line.indexOf("'")).trim();
+                    whereTokens.add(value);
+                    line = line.substring(line.indexOf(value) + value.length() + 1).trim();
+                    i = -1;
+                    continue;
+                }
+
+                matcher2 = pattern2.matcher(line);
+                if(matcher2.find()) {
+                    value = line.substring(0, line.indexOf(" ")).trim();
+                    whereTokens.add(value);
+                    line = line.substring(line.indexOf(value) + value.length() + 1).trim();
+                    i = -1;
+                    continue;
+                }
+
+                matcher3 = pattern3.matcher(line);
+                if(matcher3.find()) {
+                    value = line.trim();
+                    whereTokens.add(value);
+                    break;
+                }
+
+                if(i == homunculus.size() - 1){
+                    throw new SQLSyntaxException("WHERE STATEMENT MALFORMED AT > " + line);
+                }
+            }
+        } catch (SQLSyntaxException e) {
+            throw new SQLSyntaxException(e.getMessage());
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("WHERE STATEMENT MALFORMED AT > " + line);
+        }
+
+        return whereTokens;
     }
 }
 

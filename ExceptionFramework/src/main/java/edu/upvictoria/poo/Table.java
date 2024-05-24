@@ -30,7 +30,7 @@ public class Table {
     }
 
     //para recuperar tabla ya existente
-        public Table(File tableFile) throws FileSystemException {
+    public Table(File tableFile) throws FileSystemException {
         this.tableFile = tableFile;
         int a = tableFile.getName().indexOf('.');
         this.tableName = tableFile.getName().substring(0,a);
@@ -183,6 +183,11 @@ public class Table {
     }
 
     public void printData(){
+        for(Column col : columns){
+            System.out.print("| " + col.getName() + "\t");
+        }
+        System.out.println("|");
+
         for (ArrayList<Object> datum : data) {
             for (Object object : datum) {
                 System.out.print("| " + object.toString() + "\t");

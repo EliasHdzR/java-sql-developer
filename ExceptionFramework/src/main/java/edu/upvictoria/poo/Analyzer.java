@@ -12,7 +12,7 @@ import java.io.File;
 public class Analyzer {
     private final ArrayList<String> keywords = new ArrayList<>();
     private final ArrayList<String> dataTypes = new ArrayList<>();
-    private final ArrayList<String> dataModifiers = new ArrayList<>();
+    private final ArrayList<String> operators = new ArrayList<>();
     private final ArrayList<String> constraints = new ArrayList<>();
 
     private final SQL sql = new SQL();
@@ -33,9 +33,16 @@ public class Analyzer {
         keywords.add("FROM");
         keywords.add("WHERE");
 
-        dataModifiers.add("AND");
-        dataModifiers.add("OR");
-        dataModifiers.add("AS");
+        operators.add("AND");
+        operators.add("OR");
+        operators.add("=");
+        operators.add("<");
+        operators.add(">");
+        operators.add("<=");
+        operators.add(">=");
+        operators.add("!=");
+        operators.add("(");
+        operators.add(")");
 
         constraints.add("NOT NULL");
         constraints.add("PRIMARY KEY");
@@ -184,8 +191,8 @@ public class Analyzer {
         return constraints;
     }
 
-    public ArrayList<String> getDataModifiers() {
-        return dataModifiers;
+    public ArrayList<String> getOperators() {
+        return operators;
     }
 
     public void refreshDB(File file) throws FileSystemException{
