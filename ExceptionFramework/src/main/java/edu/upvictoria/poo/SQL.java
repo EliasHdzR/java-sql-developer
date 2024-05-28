@@ -368,7 +368,8 @@ public class SQL {
         ArrayList<String> columns = new ArrayList<>();
         ArrayList<String> showingCol = new ArrayList<>();
         String cleanedLine, selectedColumns, selectedTable, whereLine = null;
-        ArrayList<String> whereTokens = new ArrayList<>();
+        ArrayList<String> whereTokens;
+        ArrayList<ArrayList<Object>> wheredData = new ArrayList<>();
         boolean tableExists = false;
 
         try{
@@ -376,10 +377,12 @@ public class SQL {
             selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
 
             if(cleanedLine.contains("WHERE")){
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
+                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1,
+                        cleanedLine.indexOf(" WHERE")).trim();
                 whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
             } else {
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
+                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") +
+                        "FROM".length() + 1).trim();
             }
 
             if(!selectedColumns.equals("*")){
@@ -399,6 +402,10 @@ public class SQL {
                 if(whereLine != null){
                     whereTokens = getWhereTokens(whereLine,table);
                     whereTokens = Where.infixToPostfix(whereTokens);
+                    Tree.Node root = Where.createTree(whereTokens);
+                    wheredData = Where.evaluateTree(root, table.getData(), table);
+                } else {
+                    wheredData = table.getData();
                 }
 
                 if(!selectedColumns.equals("*")){
@@ -414,10 +421,10 @@ public class SQL {
                         throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH");
                     }
 
-                    table.printData(showingCol);
+                    table.printData(showingCol, wheredData);
 
                 } else {
-                    table.printData();
+                    table.printData(wheredData);
                 }
                 break;
             }
@@ -430,17 +437,16 @@ public class SQL {
 
     public ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
         Analyzer analyzer = new Analyzer();
-        ArrayList<String> operators = analyzer.getOperators();
         ArrayList<String> whereTokens = new ArrayList<>();
         String value;
 
-        ArrayList<String> homunculus = new ArrayList<>(operators);
-        homunculus.addAll(table.getColumnsName());
-        boolean foundKeyword;
+        /*ArrayList<String> homunculus = new ArrayList<>(analyzer.getOperators());
+        homunculus.addAll(table.getColumnsName());*/
 
         String format1 = "^'.+'";
         String format2 = "^\\d*\\s+";
         String format3 = "^\\d*$";
+
         Pattern pattern1 = Pattern.compile(format1);
         Pattern pattern2 = Pattern.compile(format2);
         Pattern pattern3 = Pattern.compile(format3);
@@ -450,50 +456,101 @@ public class SQL {
         line = line.replaceAll("^=","!=");
 
         try {
-            for(int i = 0; i < homunculus.size(); i++){
-                String homunculee = homunculus.get(i);
-                if(line.startsWith(homunculee)){
-                    whereTokens.add(homunculee);
-                    line = line.substring(line.indexOf(homunculee) + homunculee.length()).trim();
-                    i = -1;
-                    continue;
+            while(!line.isBlank()){
+                String initStateLine = line;
+                for(int i = 0; i < analyzer.getOperators().size(); i++){
+                    String operator = analyzer.getOperators().get(i);
+
+                    if(line.startsWith(operator)){
+                        if(operator.equals("(") || operator.equals(")") || operator.equals("AND") || operator.equals("OR")){
+                            whereTokens.add(operator);
+                        } else {
+                            String lastToken = whereTokens.get(whereTokens.size()-1);
+
+                            if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
+                                throw new SQLSyntaxException("UNEXPECTED OPERATOR: " + operator);
+                            }
+
+                            lastToken += (" " + operator);
+                            whereTokens.set(whereTokens.size()-1, lastToken);
+                        }
+
+                        line = line.substring(line.indexOf(operator) + operator.length()).trim();
+                        break;
+                    }
+                }
+
+                for(int i = 0; i < table.getColumnsName().size(); i++){
+                    String columnName = table.getColumnsName().get(i);
+
+                    if(line.startsWith(columnName)){
+                        whereTokens.add(columnName);
+                        line = line.substring(line.indexOf(columnName) + columnName.length()).trim();
+                        break;
+                    }
                 }
 
                 if(line.startsWith("NULL")){
-                    whereTokens.add("\0");
+                    String lastToken = whereTokens.get(whereTokens.size()-1);
+
+                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
+                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
+                    }
+
+                    lastToken += " \0";
+                    whereTokens.set(whereTokens.size()-1, lastToken);
                     line = line.substring(line.indexOf("NULL") + "NULL".length()).trim();
-                    i = -1;
-                    continue;
                 }
 
                 matcher1 = pattern1.matcher(line);
                 if(matcher1.find()){
+                    String lastToken = whereTokens.get(whereTokens.size()-1);
+
+                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
+                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
+                    }
+
                     line = line.substring(1);
                     value = line.substring(0, line.indexOf("'")).trim();
-                    whereTokens.add(value);
+                    lastToken += (" " + value);
+                    whereTokens.set(whereTokens.size()-1, lastToken);
                     line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-                    i = -1;
+
                     continue;
                 }
 
                 matcher2 = pattern2.matcher(line);
                 if(matcher2.find()) {
+                    String lastToken = whereTokens.get(whereTokens.size()-1);
+
+                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
+                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
+                    }
+
                     value = line.substring(0, line.indexOf(" ")).trim();
-                    whereTokens.add(value);
+                    lastToken += (" " + value);
+                    whereTokens.set(whereTokens.size()-1, lastToken);
                     line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-                    i = -1;
+
                     continue;
                 }
 
                 matcher3 = pattern3.matcher(line);
                 if(matcher3.find()) {
+                    String lastToken = whereTokens.get(whereTokens.size()-1);
+
+                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
+                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
+                    }
+
                     value = line.trim();
-                    whereTokens.add(value);
-                    break;
+                    lastToken += (" " + value);
+                    whereTokens.set(whereTokens.size()-1, lastToken);
+                    line = line.substring(line.indexOf(value) + value.length()).trim();
                 }
 
-                if(i == homunculus.size() - 1){
-                    throw new SQLSyntaxException("WHERE STATEMENT MALFORMED AT > " + line);
+                if(initStateLine.equals(line)){
+                    throw new SQLSyntaxException("MALFORMED STATEMENT");
                 }
             }
         } catch (SQLSyntaxException e) {
@@ -506,6 +563,6 @@ public class SQL {
     }
 }
 
-// TODO: COMPROBRAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
-// TODO: COMPROBRAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
+// TODO: COMPROBAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
+// TODO: COMPROBAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
 // TODO: CREAR EL WHERE

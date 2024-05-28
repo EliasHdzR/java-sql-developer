@@ -33,22 +33,27 @@ public class Analyzer {
         keywords.add("FROM");
         keywords.add("WHERE");
 
+        operators.add("DIV");
         operators.add("AND");
         operators.add("OR");
+        operators.add("<=");
+        operators.add(">=");
         operators.add("=");
         operators.add("<");
         operators.add(">");
-        operators.add("<=");
-        operators.add(">=");
         operators.add("!=");
         operators.add("(");
         operators.add(")");
+        operators.add("*");
+        operators.add("+");
+        operators.add("-");
+        operators.add("/");
+        operators.add("%");
 
         constraints.add("NOT NULL");
         constraints.add("PRIMARY KEY");
         constraints.add("FOREIGN KEY");
 
-        dataTypes.add("NUMBER");
         dataTypes.add("VARCHAR");
         dataTypes.add("CHAR");
         dataTypes.add("BOOLEAN");

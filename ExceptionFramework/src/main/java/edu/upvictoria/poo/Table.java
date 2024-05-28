@@ -83,6 +83,10 @@ public class Table {
         return columns;
     }
 
+    public ArrayList<ArrayList<Object>> getData() {
+        return data;
+    }
+
     public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws IOException {
         ArrayList<Object> newData = new ArrayList<>();
 
@@ -182,7 +186,7 @@ public class Table {
         }
     }
 
-    public void printData(){
+    public void printData(ArrayList<ArrayList<Object>> data){
         for(Column col : columns){
             System.out.print("| " + col.getName() + "\t");
         }
@@ -200,7 +204,7 @@ public class Table {
         }
     }
 
-    public void printData(ArrayList<String> columns) {
+    public void printData(ArrayList<String> columns, ArrayList<ArrayList<Object>> data) {
         for(String colName : columns){
             System.out.print("| " + colName + "\t");
         }
@@ -240,5 +244,17 @@ public class Table {
         }
 
         return columnsName;
+    }
+
+    public int getColumnPos(String columnName){
+        ArrayList<String> columnsName = getColumnsName();
+
+        for(int i = 0; i < columnsName.size(); i++){
+            if(columnName.equals(columnsName.get(i))){
+                return i;
+            }
+        }
+
+        return -1;
     }
 }
