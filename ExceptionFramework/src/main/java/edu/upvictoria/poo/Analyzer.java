@@ -126,13 +126,13 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleDeleteFrom(line, keyword);
+                            sql.handleDeleteFrom(line, keyword, database);
                             refreshDB(this.database.getDbFile());
                             return;
 
                         case "UPDATE":
                             refreshDB(this.database.getDbFile());
-                            sql.handleUpdate(line, keyword);
+                            sql.handleUpdate(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());
                             return;
 

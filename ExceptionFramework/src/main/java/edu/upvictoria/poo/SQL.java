@@ -2,6 +2,7 @@ package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.exceptions.*;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class SQL {
             throw new StringIndexOutOfBoundsException();
         }
 
-        return line;
+        return line.trim();
     }
 
     public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
@@ -357,19 +358,60 @@ public class SQL {
         table.appendDataToTable(insertionData,insertionColumns);
     }
 
-    public void handleDeleteFrom(String line, String keyword){
+    public void handleDeleteFrom(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException, NoSuchFileException{
+        String cleanedLine, selectedTable, whereLine = null;
+        boolean tableExists = false;
+        ArrayList<String> whereTokens;
+        ArrayList<ArrayList<Object>> wheredData;
+
+        try{
+            cleanedLine = clean(line, keyword);
+            if(cleanedLine.contains("WHERE")){
+                selectedTable = cleanedLine.substring(0,cleanedLine.indexOf(" ")).trim();
+                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
+            } else {
+                selectedTable = cleanedLine;
+            }
+        } catch (StringIndexOutOfBoundsException e){
+            throw new StringIndexOutOfBoundsException();
+        }
+
+        ArrayList<Table> tables = database.getTables();
+        for(Table table : tables){
+            if(table.getTableName().equals(selectedTable)){
+                tableExists = true;
+
+                if(whereLine != null){
+                    whereTokens = getWhereTokens(whereLine,table);
+                    whereTokens = Where.infixToPostfix(whereTokens);
+                    Tree.Node root = Where.createTree(whereTokens);
+                    wheredData = Where.evaluateTree(root, table.getData(), table);
+                } else {
+                    wheredData = table.getData();
+                }
+
+                ArrayList<ArrayList<Object>> pureData = new ArrayList<>(table.getData());
+                pureData.removeAll(wheredData);
+                table.setData(pureData);
+                table.writeDataToFile();
+            }
+        }
+
+        if(!tableExists){
+            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
+        }
     }
 
-    public void handleUpdate(String line, String keyword){
+    public void handleUpdate(String line, String keyword, Database database) throws SQLSyntaxException, StringIndexOutOfBoundsException {
+
     }
 
-    public void handleSelect(String line, String keyword, Database database) throws SQLSyntaxException,
-            StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
+    public void handleSelect(String line, String keyword, Database database) throws SQLSyntaxException, StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
         ArrayList<String> columns = new ArrayList<>();
         ArrayList<String> showingCol = new ArrayList<>();
         String cleanedLine, selectedColumns, selectedTable, whereLine = null;
         ArrayList<String> whereTokens;
-        ArrayList<ArrayList<Object>> wheredData = new ArrayList<>();
+        ArrayList<ArrayList<Object>> wheredData;
         boolean tableExists = false;
 
         try{
@@ -377,12 +419,10 @@ public class SQL {
             selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
 
             if(cleanedLine.contains("WHERE")){
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1,
-                        cleanedLine.indexOf(" WHERE")).trim();
+                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
                 whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
             } else {
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") +
-                        "FROM".length() + 1).trim();
+                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
             }
 
             if(!selectedColumns.equals("*")){
@@ -439,9 +479,6 @@ public class SQL {
         Analyzer analyzer = new Analyzer();
         ArrayList<String> whereTokens = new ArrayList<>();
         String value;
-
-        /*ArrayList<String> homunculus = new ArrayList<>(analyzer.getOperators());
-        homunculus.addAll(table.getColumnsName());*/
 
         String format1 = "^'.+'";
         String format2 = "^\\d*\\s+";

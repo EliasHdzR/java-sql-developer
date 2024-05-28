@@ -19,7 +19,7 @@ public class Table {
     private final String tableName;
     private final File tableFile;
     private final ArrayList<Column> columns;
-    private final ArrayList<ArrayList<Object>> data =  new ArrayList<>();
+    private ArrayList<ArrayList<Object>> data =  new ArrayList<>();
 
     //para crear nueva tabla
     public Table(File tableFile, ArrayList<Column> columns){
@@ -85,6 +85,10 @@ public class Table {
 
     public ArrayList<ArrayList<Object>> getData() {
         return data;
+    }
+
+    public void setData(ArrayList<ArrayList<Object>> data) {
+        this.data = data;
     }
 
     public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws IOException {
@@ -202,6 +206,7 @@ public class Table {
             }
             System.out.println("+");
         }
+        System.out.println();
     }
 
     public void printData(ArrayList<String> columns, ArrayList<ArrayList<Object>> data) {
@@ -234,6 +239,7 @@ public class Table {
             }
             System.out.println("+");
         }
+        System.out.println();
     }
 
     public ArrayList<String> getColumnsName(){
