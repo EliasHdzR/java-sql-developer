@@ -141,7 +141,6 @@ public class Where {
             throw new SQLSyntaxException("INCORRECT DATA TYPE GIVEN");
         }
 
-
         switch(operator){
             case "=":
                 return rowValue.equals(conditionValues[2]);

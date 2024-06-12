@@ -12,17 +12,4 @@ public class Tree {
             left = right = null;
         }
     }
-
-    public static Double getDouble(String str) throws NumberFormatException{
-        return Double.parseDouble(str);
-    }
-
-    public static void printTree(Node node) {
-        if (node == null) {
-            return;
-        }
-        printTree(node.left);
-        System.out.print(node.value + " ");
-        printTree(node.right);
-    }
 }

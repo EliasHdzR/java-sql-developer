@@ -2,7 +2,6 @@ package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.exceptions.*;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -15,26 +14,14 @@ public class SQL {
         int endOfKeyword = line.indexOf(keyword) + keyword.length();
         int semicolon = line.indexOf(";");
 
-        try {
-            line = line.substring(endOfKeyword + 1, semicolon).trim();
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new StringIndexOutOfBoundsException();
-        }
-
+        line = line.substring(endOfKeyword + 1, semicolon);
         return line.trim();
     }
 
     public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
-        String givenPath;
-
-        try {
-            givenPath = clean(line,keyword);
-        } catch (StringIndexOutOfBoundsException e){
-            throw new StringIndexOutOfBoundsException(e.getMessage());
-        }
+        String givenPath = clean(line,keyword);
 
         File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
-
         if(!database.exists()){
             throw new FileNotFoundException();
         }
@@ -87,6 +74,7 @@ public class SQL {
                         break;
                     }
                 }
+
                 if(!foundDataType){
                     throw new DataTypeNotFoundException("DATA TYPE NOT FOUND IN LINE " + value);
                 }
@@ -119,18 +107,10 @@ public class SQL {
     }
 
     public void handleCreateTable(String line, String keyword, Database database) throws IOException {
-        String cleanedLine;
-        ArrayList<Column> columns;
+        String cleanedLine = clean(line, keyword);
+        ArrayList<Column> columns = splitValues(cleanedLine);
         ArrayList<String> duplicates = new ArrayList<>();
 
-        try {
-            cleanedLine = clean(line, keyword);
-            columns = splitValues(cleanedLine);
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new StringIndexOutOfBoundsException(e.getMessage());
-        } catch (DataTypeNotFoundException e) {
-            throw new DataTypeNotFoundException(e.getMessage());
-        }
 
         for (int i = 0; i < columns.size(); i++) {
             for (int j = i + 1; j < columns.size(); j++) {
@@ -159,7 +139,7 @@ public class SQL {
         database.addTable(newTable);
     }
 
-    private static File getFile(Database database, ArrayList<Column> columns) throws IOException {
+    private static File getFile(Database database, ArrayList<Column> columns) throws FileSystemException {
         File tableFile = new File(database.getDbFile().getAbsolutePath() + "/" + columns.get(0).getName() + ".csv");
 
         if(tableFile.exists()){
@@ -170,26 +150,19 @@ public class SQL {
             throw new AccessDeniedException("NO PERMISSION IN GIVEN PATH: " + tableFile.getAbsolutePath());
         }
 
-        try{
+        try {
             if (!tableFile.createNewFile()) {
-                throw new SecurityException("FAILED TO CREATE DIRECTORY AT " + tableFile.getAbsolutePath());
+                throw new AccessDeniedException("");
             }
-        } catch (IOException e) {
-            throw new IOException(e.getMessage());
+        } catch (Exception e) {
+            throw new AccessDeniedException("FAILED TO CREATE DIRECTORY AT " + tableFile.getAbsolutePath());
         }
 
         return tableFile;
     }
 
     public void handleCreateDatabase(String line, String keyword) throws FileSystemException {
-        String givenPath;
-
-        try {
-            givenPath = clean(line,keyword);
-        } catch (StringIndexOutOfBoundsException e){
-            throw new StringIndexOutOfBoundsException(e.getMessage());
-        }
-
+        String givenPath = clean(line,keyword);
         File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
 
         if(database.exists()){
@@ -197,7 +170,7 @@ public class SQL {
         }
 
         if(!database.getName().endsWith("_DB")){
-            throw new NoSuchFileException("NOT DABASE GIVEN: " + givenPath);
+            throw new NoSuchFileException("NOT DATABASE GIVEN: " + givenPath);
         }
 
         if(!database.getParentFile().canWrite()){
@@ -205,18 +178,12 @@ public class SQL {
         }
 
         if(!database.mkdir()){
-            throw new SecurityException("FAILED TO CREATE DIRECTORY AT " + givenPath);
+            throw new SecurityException("FAILED TO CREATE DATABASE AT " + givenPath);
         }
     }
 
     public void handleDropTable(String line, String keyword, Database database) throws IOException {
-        String givenName;
-
-        try {
-            givenName = clean(line, keyword);
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new StringIndexOutOfBoundsException(e.getMessage());
-        }
+        String givenName = clean(line, keyword);
 
         for (Table table : database.getTables()) {
             if (table.getTableName().equals(givenName)) {
@@ -242,47 +209,25 @@ public class SQL {
             }
         }
 
-        throw new FileNotFoundException("FILE NOT FOUND");
+        throw new FileNotFoundException("TABLE NOT FOUND");
     }
 
-    public ArrayList<String> splitInsertionColumns (String line, boolean splittingCols) throws StringIndexOutOfBoundsException {
+    public ArrayList<String> splitInsertionColumns (String line, boolean splittingCols) throws SQLSyntaxException {
         ArrayList<String> columns = new ArrayList<>();
         String tableName;
 
         if(splittingCols){
-            try {
-                tableName = line.substring(0, line.indexOf("(")).trim();
-                line = line.substring(tableName.length()).trim();
+            tableName = line.substring(0, line.indexOf("(")).trim();
+            line = line.substring(tableName.length()).trim();
 
-                if(!(line.startsWith("(") && line.endsWith(")"))){
-                    throw new StringIndexOutOfBoundsException();
-                }
-
-                line = line.substring(line.indexOf("(")+1,line.indexOf(")"));
-                columns.add(tableName.trim());
-
-                String[] values = line.split(",");
-                for(int i = 0; i < values.length; i++){
-                    values[i] = values[i].trim();
-                }
-
-                columns.addAll(Arrays.asList(values));
-
-                return columns;
-            } catch (StringIndexOutOfBoundsException e){
-                throw new StringIndexOutOfBoundsException();
-            }
-        }
-
-        try {
             if(!(line.startsWith("(") && line.endsWith(")"))){
-                throw new StringIndexOutOfBoundsException();
+                throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION COLUMNS");
             }
 
-            line = line.substring(line.indexOf("(") + 1,line.indexOf(")")).trim();
+            line = line.substring(line.indexOf("(")+1,line.indexOf(")"));
+            columns.add(tableName.trim());
 
             String[] values = line.split(",");
-
             for(int i = 0; i < values.length; i++){
                 values[i] = values[i].trim();
             }
@@ -290,9 +235,21 @@ public class SQL {
             columns.addAll(Arrays.asList(values));
 
             return columns;
-        } catch (Exception e){
-            throw new StringIndexOutOfBoundsException();
         }
+
+        if(!(line.startsWith("(") && line.endsWith(")"))){
+            throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION VALUES");
+        }
+
+        line = line.substring(line.indexOf("(") + 1,line.indexOf(")")).trim();
+        String[] values = line.split(",");
+
+        for(int i = 0; i < values.length; i++){
+            values[i] = values[i].trim();
+        }
+
+        columns.addAll(Arrays.asList(values));
+        return columns;
     }
 
     public void handleInsertInto(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException  {
@@ -302,23 +259,19 @@ public class SQL {
         Table table = null;
         boolean tableExists = false, columnFound = false;
 
-        try {
-            cleanedLine = clean(line, keyword);
-            int VALUEIndex = cleanedLine.indexOf("VALUES");
+        cleanedLine = clean(line, keyword);
+        int VALUEIndex = cleanedLine.indexOf("VALUES");
 
-            if(VALUEIndex == -1){
-                throw new StringIndexOutOfBoundsException("MISSING EXPRESSION");
-            }
-
-            cleanedLine_v2 = cleanedLine.substring(0,VALUEIndex-1);
-            insertionColumns = splitInsertionColumns(cleanedLine_v2, true);
-
-            cleanedLine_v3 = cleanedLine.substring(VALUEIndex + "VALUES ".length());
-            insertionData = splitInsertionColumns(cleanedLine_v3, false);
-
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new StringIndexOutOfBoundsException(e.getMessage());
+        if(VALUEIndex == -1){
+            throw new StringIndexOutOfBoundsException("MISSING EXPRESSION");
         }
+
+        cleanedLine_v2 = cleanedLine.substring(0,VALUEIndex-1);
+        insertionColumns = splitInsertionColumns(cleanedLine_v2, true);
+
+        cleanedLine_v3 = cleanedLine.substring(VALUEIndex + "VALUES ".length());
+        insertionData = splitInsertionColumns(cleanedLine_v3, false);
+
 
         if(insertionColumns.size()-1 != insertionData.size()){
             throw new InsuficientDataProvidedException("INSUFICIENT DATA PROVIDED");
@@ -345,7 +298,6 @@ public class SQL {
                     columnFound = true;
                     break;
                 }
-
             }
 
             if(!columnFound){
@@ -358,22 +310,17 @@ public class SQL {
         table.appendDataToTable(insertionData,insertionColumns);
     }
 
-    public void handleDeleteFrom(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException, NoSuchFileException{
-        String cleanedLine, selectedTable, whereLine = null;
+    public void handleDeleteFrom(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException {
+        String cleanedLine = clean(line, keyword), selectedTable, whereLine = null;
         boolean tableExists = false;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
 
-        try{
-            cleanedLine = clean(line, keyword);
-            if(cleanedLine.contains("WHERE")){
-                selectedTable = cleanedLine.substring(0,cleanedLine.indexOf(" ")).trim();
-                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
-            } else {
-                selectedTable = cleanedLine;
-            }
-        } catch (StringIndexOutOfBoundsException e){
-            throw new StringIndexOutOfBoundsException();
+        if(cleanedLine.contains("WHERE")){
+            selectedTable = cleanedLine.substring(0,cleanedLine.indexOf(" ")).trim();
+            whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
+        } else {
+            selectedTable = cleanedLine;
         }
 
         ArrayList<Table> tables = database.getTables();
@@ -394,6 +341,7 @@ public class SQL {
                 pureData.removeAll(wheredData);
                 table.setData(pureData);
                 table.writeDataToFile();
+                break;
             }
         }
 
@@ -402,36 +350,70 @@ public class SQL {
         }
     }
 
-    public void handleUpdate(String line, String keyword, Database database) throws SQLSyntaxException, StringIndexOutOfBoundsException {
+    public void handleUpdate(String line, String keyword, Database database) throws SQLSyntaxException, NoSuchFileException {
+        String cleanedLine = clean(line,keyword), selectedTable, whereLine = null, rawUpdateData;
+        boolean tableExists = false;
+        ArrayList<String> whereTokens;
+        ArrayList<ArrayList<Object>> wheredData;
+        ArrayList<String> updateData = new ArrayList<>();
 
+        String format1 = "^'.+'";
+        String format2 = "^\\d*";
+
+        Pattern pattern1 = Pattern.compile(format1);
+        Pattern pattern2 = Pattern.compile(format2);
+        Matcher matcher1, matcher2;
+
+
+        if(!cleanedLine.contains("SET")){
+            throw new SQLSyntaxException("MISSING 'SET' KEYWORD");
+        }
+
+        selectedTable = cleanedLine.substring(0,cleanedLine.indexOf("SET")).trim();
+
+        try {
+            if(cleanedLine.contains("WHERE")){
+                rawUpdateData = cleanedLine.substring(cleanedLine.indexOf("SET") + "SET".length(), cleanedLine.indexOf("WHERE")).trim();
+                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
+            } else {
+                rawUpdateData = cleanedLine.substring(cleanedLine.indexOf("SET") + "SET".length()).trim();
+            }
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new SQLSyntaxException("MISSING KEYWORDS");
+        }
+
+        ArrayList<Table> tables = database.getTables();
+        for(Table table : tables){
+            
+        }
+
+        if(!tableExists){
+            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
+        }
     }
 
     public void handleSelect(String line, String keyword, Database database) throws SQLSyntaxException, StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
         ArrayList<String> columns = new ArrayList<>();
         ArrayList<String> showingCol = new ArrayList<>();
-        String cleanedLine, selectedColumns, selectedTable, whereLine = null;
+
+        String cleanedLine = clean(line, keyword);
+        String selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
+        String selectedTable, whereLine = null;
+
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
         boolean tableExists = false;
 
-        try{
-            cleanedLine = clean(line, keyword);
-            selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
+        if(cleanedLine.contains("WHERE")){
+            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
+            whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
+        } else {
+            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
+        }
 
-            if(cleanedLine.contains("WHERE")){
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
-                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
-            } else {
-                selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
-            }
-
-            if(!selectedColumns.equals("*")){
-                selectedColumns = "(" + selectedColumns + ")";
-                columns = splitInsertionColumns(selectedColumns, false);
-            }
-
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new StringIndexOutOfBoundsException();
+        if(!selectedColumns.equals("*")){
+            selectedColumns = "(" + selectedColumns + ")";
+            columns = splitInsertionColumns(selectedColumns, false);
         }
 
         ArrayList<Table> tables = database.getTables();
@@ -451,9 +433,7 @@ public class SQL {
                 if(!selectedColumns.equals("*")){
                     for(String tableColName : table.getColumnsName()){
                         for(String selectColName : columns) {
-                            if(tableColName.equals(selectColName)){
-                                showingCol.add(tableColName);
-                            }
+                            if(tableColName.equals(selectColName)){ showingCol.add(tableColName); }
                         }
                     }
 
@@ -602,4 +582,3 @@ public class SQL {
 
 // TODO: COMPROBAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
 // TODO: COMPROBAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
-// TODO: CREAR EL WHERE

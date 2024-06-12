@@ -27,11 +27,7 @@ public class Analyzer {
         keywords.add("INSERT INTO");
         keywords.add("DELETE FROM");
         keywords.add("UPDATE");
-        keywords.add("SET");
         keywords.add("SELECT");
-        keywords.add("VALUES");
-        keywords.add("FROM");
-        keywords.add("WHERE");
 
         operators.add("DIV");
         operators.add("AND");
