@@ -1,5 +1,6 @@
 package edu.upvictoria.poo;
 
+import edu.upvictoria.poo.SQLProcedures.Insertion;
 import edu.upvictoria.poo.exceptions.*;
 
 import java.io.FileNotFoundException;
@@ -17,6 +18,7 @@ public class Analyzer {
 
     private final SQL sql = new SQL();
     private Database database = new Database();
+    private final Insertion insertion = new Insertion();
     
     public Analyzer(){
         keywords.add("USE");
@@ -112,7 +114,9 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleInsertInto(line, keyword, this.database);
+                            insertion.setDatabase(database);
+                            insertion.setQuery(line);
+                            insertion.handle();
                             refreshDB(this.database.getDbFile());
                             return;
 
@@ -127,6 +131,10 @@ public class Analyzer {
                             return;
 
                         case "UPDATE":
+                            if (database.getDbFile() == null) {
+                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                            }
+
                             refreshDB(this.database.getDbFile());
                             sql.handleUpdate(line, keyword, this.database);
                             refreshDB(this.database.getDbFile());

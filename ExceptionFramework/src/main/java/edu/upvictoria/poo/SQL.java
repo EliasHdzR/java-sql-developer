@@ -5,21 +5,12 @@ import edu.upvictoria.poo.exceptions.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SQL {
-    public String clean(String line, String keyword) throws StringIndexOutOfBoundsException {
-        int endOfKeyword = line.indexOf(keyword) + keyword.length();
-        int semicolon = line.indexOf(";");
-
-        line = line.substring(endOfKeyword + 1, semicolon);
-        return line.trim();
-    }
-
     public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
-        String givenPath = clean(line,keyword);
+        String givenPath = Utils.clean(line,keyword);
 
         File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
         if(!database.exists()){
@@ -107,7 +98,7 @@ public class SQL {
     }
 
     public void handleCreateTable(String line, String keyword, Database database) throws IOException {
-        String cleanedLine = clean(line, keyword);
+        String cleanedLine = Utils.clean(line, keyword);
         ArrayList<Column> columns = splitValues(cleanedLine);
         ArrayList<String> duplicates = new ArrayList<>();
 
@@ -162,7 +153,7 @@ public class SQL {
     }
 
     public void handleCreateDatabase(String line, String keyword) throws FileSystemException {
-        String givenPath = clean(line,keyword);
+        String givenPath = Utils.clean(line,keyword);
         File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
 
         if(database.exists()){
@@ -183,7 +174,7 @@ public class SQL {
     }
 
     public void handleDropTable(String line, String keyword, Database database) throws IOException {
-        String givenName = clean(line, keyword);
+        String givenName = Utils.clean(line, keyword);
 
         for (Table table : database.getTables()) {
             if (table.getTableName().equals(givenName)) {
@@ -212,106 +203,8 @@ public class SQL {
         throw new FileNotFoundException("TABLE NOT FOUND");
     }
 
-    public ArrayList<String> splitInsertionColumns (String line, boolean splittingCols) throws SQLSyntaxException {
-        ArrayList<String> columns = new ArrayList<>();
-        String tableName;
-
-        if(splittingCols){
-            tableName = line.substring(0, line.indexOf("(")).trim();
-            line = line.substring(tableName.length()).trim();
-
-            if(!(line.startsWith("(") && line.endsWith(")"))){
-                throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION COLUMNS");
-            }
-
-            line = line.substring(line.indexOf("(")+1,line.indexOf(")"));
-            columns.add(tableName.trim());
-
-            String[] values = line.split(",");
-            for(int i = 0; i < values.length; i++){
-                values[i] = values[i].trim();
-            }
-
-            columns.addAll(Arrays.asList(values));
-
-            return columns;
-        }
-
-        if(!(line.startsWith("(") && line.endsWith(")"))){
-            throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION VALUES");
-        }
-
-        line = line.substring(line.indexOf("(") + 1,line.indexOf(")")).trim();
-        String[] values = line.split(",");
-
-        for(int i = 0; i < values.length; i++){
-            values[i] = values[i].trim();
-        }
-
-        columns.addAll(Arrays.asList(values));
-        return columns;
-    }
-
-    public void handleInsertInto(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException  {
-        String cleanedLine, cleanedLine_v2, cleanedLine_v3;
-        ArrayList<String> insertionColumns, insertionData;
-        ArrayList<Column> tableColumns = new ArrayList<>();
-        Table table = null;
-        boolean tableExists = false, columnFound = false;
-
-        cleanedLine = clean(line, keyword);
-        int VALUEIndex = cleanedLine.indexOf("VALUES");
-
-        if(VALUEIndex == -1){
-            throw new StringIndexOutOfBoundsException("MISSING EXPRESSION");
-        }
-
-        cleanedLine_v2 = cleanedLine.substring(0,VALUEIndex-1);
-        insertionColumns = splitInsertionColumns(cleanedLine_v2, true);
-
-        cleanedLine_v3 = cleanedLine.substring(VALUEIndex + "VALUES ".length());
-        insertionData = splitInsertionColumns(cleanedLine_v3, false);
-
-
-        if(insertionColumns.size()-1 != insertionData.size()){
-            throw new InsuficientDataProvidedException("INSUFICIENT DATA PROVIDED");
-        }
-
-        ArrayList<Table> tables = database.getTables();
-        for(Table tableF : tables) {
-            if(tableF.getTableName().equals(insertionColumns.get(0))){
-                tableExists = true;
-                insertionColumns.remove(0);
-                table = tableF;
-                tableColumns = tableF.getColumns();
-                break;
-            }
-        }
-
-        if(!tableExists){
-            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
-
-        for(String insertionColumn : insertionColumns){
-            for(Column tableColumn : tableColumns){
-                if(tableColumn.getName().equals(insertionColumn)){
-                    columnFound = true;
-                    break;
-                }
-            }
-
-            if(!columnFound){
-                throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH: " + insertionColumn);
-            }
-
-            columnFound = false;
-        }
-
-        table.appendDataToTable(insertionData,insertionColumns);
-    }
-
     public void handleDeleteFrom(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException {
-        String cleanedLine = clean(line, keyword), selectedTable, whereLine = null;
+        String cleanedLine = Utils.clean(line, keyword), selectedTable, whereLine = null;
         boolean tableExists = false;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
@@ -351,7 +244,7 @@ public class SQL {
     }
 
     public void handleUpdate(String line, String keyword, Database database) throws SQLSyntaxException, NoSuchFileException {
-        String cleanedLine = clean(line,keyword), selectedTable, whereLine = null, rawUpdateData;
+        String cleanedLine = Utils.clean(line,keyword), selectedTable, whereLine = null, rawUpdateData;
         boolean tableExists = false;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
@@ -384,7 +277,18 @@ public class SQL {
 
         ArrayList<Table> tables = database.getTables();
         for(Table table : tables){
-            
+            if(table.getTableName().equals(selectedTable)){
+                tableExists = true;
+
+                if(whereLine != null){
+                    whereTokens = getWhereTokens(whereLine,table);
+                    whereTokens = Where.infixToPostfix(whereTokens);
+                    Tree.Node root = Where.createTree(whereTokens);
+                    wheredData = Where.evaluateTree(root, table.getData(), table);
+                } else {
+                    wheredData = table.getData();
+                }
+            }
         }
 
         if(!tableExists){
@@ -396,7 +300,7 @@ public class SQL {
         ArrayList<String> columns = new ArrayList<>();
         ArrayList<String> showingCol = new ArrayList<>();
 
-        String cleanedLine = clean(line, keyword);
+        String cleanedLine = Utils.clean(line, keyword);
         String selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
         String selectedTable, whereLine = null;
 
@@ -576,9 +480,14 @@ public class SQL {
             throw new IndexOutOfBoundsException("WHERE STATEMENT MALFORMED AT > " + line);
         }
 
+        for(String token : whereTokens){
+            System.out.println(token);
+        }
+
         return whereTokens;
     }
 }
 
 // TODO: COMPROBAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
 // TODO: COMPROBAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
+// TODO: EN INSERCION DE DATOS DELIMITAR LOS STRINGS CON COMILLAS SIMPLES

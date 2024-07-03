@@ -42,4 +42,12 @@ public class Database {
     public void addTable(Table table) {
         this.tables.add(table);
     }
+
+    public Table getTableByName(String tableName){
+        for(Table table : this.tables){
+            if(table.getTableName().equals(tableName)){
+                return table;
+            }
+        }
+    }
 }
