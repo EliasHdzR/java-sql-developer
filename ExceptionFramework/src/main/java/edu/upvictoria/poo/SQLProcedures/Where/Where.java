@@ -1,5 +1,7 @@
-package edu.upvictoria.poo;
+package edu.upvictoria.poo.SQLProcedures.Where;
 
+import edu.upvictoria.poo.Analyzer;
+import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import java.util.ArrayList;
 import java.util.Stack;

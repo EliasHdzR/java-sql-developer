@@ -49,5 +49,7 @@ public class Database {
                 return table;
             }
         }
+
+        return null;
     }
 }

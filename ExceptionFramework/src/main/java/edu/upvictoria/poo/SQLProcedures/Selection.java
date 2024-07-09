@@ -1,10 +1,11 @@
 package edu.upvictoria.poo.SQLProcedures;
 
-
 import edu.upvictoria.poo.Database;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.Utils;
+
+import edu.upvictoria.poo.SQLProcedures.Where.*;
 
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
@@ -26,79 +27,80 @@ public class Selection {
         this.query = query;
     }
 
-    public void handle() throws NoSuchFileException, ColumnDoesNotMatch {
-        ArrayList<Column> columns = new ArrayList<>();
-        ArrayList<String> showingCol = new ArrayList<>();
-
+    public void handle() throws NoSuchFileException, ColumnDoesNotMatch, SQLSyntaxException, IndexOutOfBoundsException {
         String cleanedLine = Utils.clean(query, keyword);
         String rawColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
         String selectedTable, whereLine = null;
 
+        ArrayList<Column> columns;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
-        boolean tableExists = false;
 
+        // Si la sentencia select contiene una clausula WHERE
         if(cleanedLine.contains("WHERE")){
-            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
-            whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
+            String[] splitted = cleanedLine.split("WHERE");
+            String[] splitted2 = splitted[0].split("FROM");
+            selectedTable = splitted2[1].trim();
+            System.out.println(selectedTable);
+            whereLine = splitted[1].trim();
+            System.out.println(whereLine);
         } else {
-            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
+            String[] splitted = cleanedLine.split("FROM");
+            selectedTable = splitted[1].trim();
         }
 
-        if(!rawColumns.equals("*")){
-            columns = getSelectedColumns(rawColumns, );
-        }
-
-        ArrayList<Table> tables = database.getTables();
-        for(Table table : tables) {
-            if (table.getTableName().equals(selectedTable)) {
-                tableExists = true;
-
-                if(whereLine != null){
-                    whereTokens = getWhereTokens(whereLine,table);
-                    whereTokens = Where.infixToPostfix(whereTokens);
-                    Tree.Node root = Where.createTree(whereTokens);
-                    wheredData = Where.evaluateTree(root, table.getData(), table);
-                } else {
-                    wheredData = table.getData();
-                }
-
-                if(!selectedColumns.equals("*")){
-                    for(String tableColName : table.getColumnsName()){
-                        for(String selectColName : columns) {
-                            if(tableColName.equals(selectColName)){ showingCol.add(tableColName); }
-                        }
-                    }
-
-                    if(showingCol.size() < columns.size()){
-                        throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH");
-                    }
-
-                    table.printData(showingCol, wheredData);
-
-                } else {
-                    table.printData(wheredData);
-                }
-                break;
-            }
-        }
-
-        if(!tableExists){
+        // Obtener tabla
+        Table table = database.getTableByName(selectedTable);
+        if(table == null){
             throw new NoSuchFileException("TABLE DOES NOT EXISTS");
         }
+
+        // Si selecciona columnas específicas
+        if(!rawColumns.equals("*")){
+            columns = getSelectedColumns(table, rawColumns);
+        } else {
+            columns = table.getColumns();
+        }
+
+        // Si existe una clasula WHERE
+        if(whereLine != null){
+            // Evaluamos los datos y obtenemos aquellos que cumplan las condiciones escritras
+            whereTokens = Utils.getWhereTokens(whereLine,table);
+            whereTokens = Where.infixToPostfix(whereTokens);
+            Tree.Node root = Where.createTree(whereTokens);
+            wheredData = Where.evaluateTree(root, table.getData(), table);
+        } else {
+            // Agarramos todos los datos
+            wheredData = table.getData();
+        }
+
+        table.printData(columns, wheredData);
     }
 
-    private ArrayList<Column> getSelectedColumns(String rawColumns) throws SQLSyntaxException{
+    /**
+     * @param table
+     * @param rawColumns
+     * @return Una lista de columnas obtenida del parseo de un string con sus nombres
+     * @throws SQLSyntaxException
+     */
+    private ArrayList<Column> getSelectedColumns(Table table, String rawColumns) throws SQLSyntaxException{
+        ArrayList<Column> columns = new ArrayList<>();
         String[] values = rawColumns.split(",");
 
         for(int i = 0; i < values.length; i++){
-            if(values[i].startsWith("'") && values[i].endsWith("'")){
-
-            }
             values[i] = values[i].trim();
-            values[i] = values[i].replace("'", "");
+
+            Column column = table.getColumnByName(values[i]);
+            if(column == null){
+                throw new SQLSyntaxException("COLUMN DOES NOT EXISTS");
+            } else {
+                columns.add(column);
+            }
         }
 
-        return new ArrayList<>(Arrays.asList(values));
+        return columns;
     }
 }
+
+
+// todo: permitir la seleccion de columnas desordenadas e imprimirlas en ese orden

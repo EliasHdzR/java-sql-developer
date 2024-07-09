@@ -1,5 +1,7 @@
 package edu.upvictoria.poo;
 
+import edu.upvictoria.poo.SQLProcedures.Where.Tree;
+import edu.upvictoria.poo.SQLProcedures.Where.Where;
 import edu.upvictoria.poo.exceptions.*;
 
 import java.io.*;
@@ -204,7 +206,7 @@ public class SQL {
     }
 
     public void handleDeleteFrom(String line, String keyword, Database database) throws IOException, StringIndexOutOfBoundsException {
-        String cleanedLine = Utils.clean(line, keyword), selectedTable, whereLine = null;
+        /*String cleanedLine = Utils.clean(line, keyword), selectedTable, whereLine = null;
         boolean tableExists = false;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
@@ -240,11 +242,11 @@ public class SQL {
 
         if(!tableExists){
             throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
+        }*/
     }
 
     public void handleUpdate(String line, String keyword, Database database) throws SQLSyntaxException, NoSuchFileException {
-        String cleanedLine = Utils.clean(line,keyword), selectedTable, whereLine = null, rawUpdateData;
+        /*String cleanedLine = Utils.clean(line,keyword), selectedTable, whereLine = null, rawUpdateData;
         boolean tableExists = false;
         ArrayList<String> whereTokens;
         ArrayList<ArrayList<Object>> wheredData;
@@ -293,201 +295,7 @@ public class SQL {
 
         if(!tableExists){
             throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
-    }
-
-    public void handleSelect(String line, String keyword, Database database) throws SQLSyntaxException, StringIndexOutOfBoundsException, NoSuchFileException, ColumnDoesNotMatch {
-        ArrayList<String> columns = new ArrayList<>();
-        ArrayList<String> showingCol = new ArrayList<>();
-
-        String cleanedLine = Utils.clean(line, keyword);
-        String selectedColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
-        String selectedTable, whereLine = null;
-
-        ArrayList<String> whereTokens;
-        ArrayList<ArrayList<Object>> wheredData;
-        boolean tableExists = false;
-
-        if(cleanedLine.contains("WHERE")){
-            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1, cleanedLine.indexOf(" WHERE")).trim();
-            whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
-        } else {
-            selectedTable = cleanedLine.substring(cleanedLine.indexOf("FROM ") + "FROM".length() + 1).trim();
-        }
-
-        if(!selectedColumns.equals("*")){
-            selectedColumns = "(" + selectedColumns + ")";
-            columns = splitInsertionColumns(selectedColumns, false);
-        }
-
-        ArrayList<Table> tables = database.getTables();
-        for(Table table : tables) {
-            if (table.getTableName().equals(selectedTable)) {
-                tableExists = true;
-
-                if(whereLine != null){
-                    whereTokens = getWhereTokens(whereLine,table);
-                    whereTokens = Where.infixToPostfix(whereTokens);
-                    Tree.Node root = Where.createTree(whereTokens);
-                    wheredData = Where.evaluateTree(root, table.getData(), table);
-                } else {
-                    wheredData = table.getData();
-                }
-
-                if(!selectedColumns.equals("*")){
-                    for(String tableColName : table.getColumnsName()){
-                        for(String selectColName : columns) {
-                            if(tableColName.equals(selectColName)){ showingCol.add(tableColName); }
-                        }
-                    }
-
-                    if(showingCol.size() < columns.size()){
-                        throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH");
-                    }
-
-                    table.printData(showingCol, wheredData);
-
-                } else {
-                    table.printData(wheredData);
-                }
-                break;
-            }
-        }
-
-        if(!tableExists){
-            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
-    }
-
-    public ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> whereTokens = new ArrayList<>();
-        String value;
-
-        String format1 = "^'.+'";
-        String format2 = "^\\d*\\s+";
-        String format3 = "^\\d*$";
-
-        Pattern pattern1 = Pattern.compile(format1);
-        Pattern pattern2 = Pattern.compile(format2);
-        Pattern pattern3 = Pattern.compile(format3);
-        Matcher matcher1, matcher2, matcher3;
-
-        line = line.replaceAll("<>","!=");
-        line = line.replaceAll("^=","!=");
-
-        try {
-            while(!line.isBlank()){
-                String initStateLine = line;
-                for(int i = 0; i < analyzer.getOperators().size(); i++){
-                    String operator = analyzer.getOperators().get(i);
-
-                    if(line.startsWith(operator)){
-                        if(operator.equals("(") || operator.equals(")") || operator.equals("AND") || operator.equals("OR")){
-                            whereTokens.add(operator);
-                        } else {
-                            String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                            if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                                throw new SQLSyntaxException("UNEXPECTED OPERATOR: " + operator);
-                            }
-
-                            lastToken += (" " + operator);
-                            whereTokens.set(whereTokens.size()-1, lastToken);
-                        }
-
-                        line = line.substring(line.indexOf(operator) + operator.length()).trim();
-                        break;
-                    }
-                }
-
-                for(int i = 0; i < table.getColumnsName().size(); i++){
-                    String columnName = table.getColumnsName().get(i);
-
-                    if(line.startsWith(columnName)){
-                        whereTokens.add(columnName);
-                        line = line.substring(line.indexOf(columnName) + columnName.length()).trim();
-                        break;
-                    }
-                }
-
-                if(line.startsWith("NULL")){
-                    String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                    }
-
-                    lastToken += " \0";
-                    whereTokens.set(whereTokens.size()-1, lastToken);
-                    line = line.substring(line.indexOf("NULL") + "NULL".length()).trim();
-                }
-
-                matcher1 = pattern1.matcher(line);
-                if(matcher1.find()){
-                    String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                    }
-
-                    line = line.substring(1);
-                    value = line.substring(0, line.indexOf("'")).trim();
-                    lastToken += (" " + value);
-                    whereTokens.set(whereTokens.size()-1, lastToken);
-                    line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-
-                    continue;
-                }
-
-                matcher2 = pattern2.matcher(line);
-                if(matcher2.find()) {
-                    String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                    }
-
-                    value = line.substring(0, line.indexOf(" ")).trim();
-                    lastToken += (" " + value);
-                    whereTokens.set(whereTokens.size()-1, lastToken);
-                    line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-
-                    continue;
-                }
-
-                matcher3 = pattern3.matcher(line);
-                if(matcher3.find()) {
-                    String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                    if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                        throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                    }
-
-                    value = line.trim();
-                    lastToken += (" " + value);
-                    whereTokens.set(whereTokens.size()-1, lastToken);
-                    line = line.substring(line.indexOf(value) + value.length()).trim();
-                }
-
-                if(initStateLine.equals(line)){
-                    throw new SQLSyntaxException("MALFORMED STATEMENT");
-                }
-            }
-        } catch (SQLSyntaxException e) {
-            throw new SQLSyntaxException(e.getMessage());
-        } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("WHERE STATEMENT MALFORMED AT > " + line);
-        }
-
-        for(String token : whereTokens){
-            System.out.println(token);
-        }
-
-        return whereTokens;
+        }*/
     }
 }
 
-// TODO: COMPROBAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
-// TODO: COMPROBAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
-// TODO: EN INSERCION DE DATOS DELIMITAR LOS STRINGS CON COMILLAS SIMPLES

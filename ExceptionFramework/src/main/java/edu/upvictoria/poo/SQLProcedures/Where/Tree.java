@@ -1,7 +1,6 @@
-package edu.upvictoria.poo;
+package edu.upvictoria.poo.SQLProcedures.Where;
 
 public class Tree {
-    Node root;
 
     public static class Node {
         String value;

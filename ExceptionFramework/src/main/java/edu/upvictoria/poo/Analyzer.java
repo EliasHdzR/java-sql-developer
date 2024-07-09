@@ -1,6 +1,7 @@
 package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.SQLProcedures.Insertion;
+import edu.upvictoria.poo.SQLProcedures.Selection;
 import edu.upvictoria.poo.exceptions.*;
 
 import java.io.FileNotFoundException;
@@ -18,7 +19,9 @@ public class Analyzer {
 
     private final SQL sql = new SQL();
     private Database database = new Database();
+
     private final Insertion insertion = new Insertion();
+    private final Selection selection = new Selection();
     
     public Analyzer(){
         keywords.add("USE");
@@ -58,7 +61,6 @@ public class Analyzer {
         dataTypes.add("DATE");
         dataTypes.add("INT");
         dataTypes.add("DOUBLE");
-        dataTypes.add("FLOAT");
     }
 
     public void analyzeSyntax(String line) throws Exception {
@@ -146,12 +148,15 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleSelect(line, keyword, database);
+                            selection.setDatabase(database);
+                            selection.setQuery(line);
+                            selection.handle();
+                            refreshDB(this.database.getDbFile());
                             return;
                     }
 
                 } catch (StringIndexOutOfBoundsException e) {
-                    throw new StringIndexOutOfBoundsException("ERROR WHILE PARSING: MISSING EXPRESSIONS" + e.getMessage());
+                    throw new StringIndexOutOfBoundsException("ERROR WHILE PARSING: MISSING EXPRESSIONS");
 
                 } catch (FileNotFoundException e) {
                     throw new FileNotFoundException("FILE NOT FOUND: " + e.getMessage());

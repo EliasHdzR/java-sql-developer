@@ -190,28 +190,9 @@ public class Table {
         }
     }
 
-    public void printData(ArrayList<ArrayList<Object>> data){
-        for(Column col : columns){
-            System.out.print("| " + col.getName() + "\t");
-        }
-        System.out.println("|");
-
-        for (ArrayList<Object> datum : data) {
-            for (Object object : datum) {
-                System.out.print("| " + object.toString() + "\t");
-            }
-            System.out.println("|");
-            for (int i = 0; i < datum.size(); i++) {
-                System.out.print("+------------");
-            }
-            System.out.println("+");
-        }
-        System.out.println();
-    }
-
-    public void printData(ArrayList<String> columns, ArrayList<ArrayList<Object>> data) {
-        for(String colName : columns){
-            System.out.print("| " + colName + "\t");
+    public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) {
+        for(Column column : columns){
+            System.out.print("| " + column.getName() + "\t");
         }
         System.out.println("|");
         for (int i = 0; i < columns.size(); i++) {
@@ -223,7 +204,7 @@ public class Table {
         for (ArrayList<Object> datum : data) {
             int j = 0;
             for (int i = 0; i < datum.size(); i++) {
-                if(this.columns.get(i).getName().equals(columns.get(j))){
+                if(this.columns.get(i).getName().equals(columns.get(j).getName())){
                     Object object = datum.get(i);
                     System.out.print("| " + object.toString() + "\t");
                     j++;
@@ -233,13 +214,13 @@ public class Table {
                     }
                 }
             }
+
             System.out.println("|");
             for (int i = 0; i < columns.size(); i++) {
                 System.out.print("+------------");
             }
             System.out.println("+");
         }
-        System.out.println();
     }
 
     public ArrayList<String> getColumnsName(){
@@ -262,5 +243,15 @@ public class Table {
         }
 
         return -1;
+    }
+
+    public Column getColumnByName(String name){
+        for(Column column : columns){
+            if(column.getName().equals(name)){
+                return column;
+            }
+        }
+
+        return null;
     }
 }
