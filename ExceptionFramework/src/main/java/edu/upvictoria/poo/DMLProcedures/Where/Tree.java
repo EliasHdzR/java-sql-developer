@@ -1,4 +1,4 @@
-package edu.upvictoria.poo.SQLProcedures.Where;
+package edu.upvictoria.poo.DMLProcedures.Where;
 
 public class Tree {
 

@@ -43,6 +43,11 @@ public class Database {
         this.tables.add(table);
     }
 
+    /**
+     *
+     * @param tableName
+     * @return A table given its name
+     */
     public Table getTableByName(String tableName){
         for(Table table : this.tables){
             if(table.getTableName().equals(tableName)){

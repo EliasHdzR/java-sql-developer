@@ -1,4 +1,4 @@
-package edu.upvictoria.poo.SQLProcedures.Where;
+package edu.upvictoria.poo.DMLProcedures.Where;
 
 import edu.upvictoria.poo.Analyzer;
 import edu.upvictoria.poo.Table;

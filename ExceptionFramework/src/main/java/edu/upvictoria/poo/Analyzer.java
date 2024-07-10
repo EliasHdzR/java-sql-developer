@@ -1,13 +1,19 @@
 package edu.upvictoria.poo;
 
-import edu.upvictoria.poo.SQLProcedures.Insertion;
-import edu.upvictoria.poo.SQLProcedures.Selection;
+import edu.upvictoria.poo.DDLProcedures.CreateTable;
+import edu.upvictoria.poo.DDLProcedures.DropTable;
+import edu.upvictoria.poo.DMLProcedures.Deletion;
+import edu.upvictoria.poo.DMLProcedures.Insertion;
+import edu.upvictoria.poo.DMLProcedures.Selection;
+import edu.upvictoria.poo.DMLProcedures.Update;
 import edu.upvictoria.poo.exceptions.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.io.File;
 
@@ -17,11 +23,14 @@ public class Analyzer {
     private final ArrayList<String> operators = new ArrayList<>();
     private final ArrayList<String> constraints = new ArrayList<>();
 
-    private final SQL sql = new SQL();
     private Database database = new Database();
 
     private final Insertion insertion = new Insertion();
     private final Selection selection = new Selection();
+    private final Deletion deletion = new Deletion();
+    private final Update update = new Update();
+    private final CreateTable creator = new CreateTable();
+    private final DropTable dropper = new DropTable();
     
     public Analyzer(){
         keywords.add("USE");
@@ -65,15 +74,14 @@ public class Analyzer {
 
     public void analyzeSyntax(String line) throws Exception {
         line = line.replaceAll("\n"," ");
-        boolean found = false;
 
         for(String keyword : keywords){
             if (line.startsWith(keyword)) {
                 try {
-                    //lets get funky
+                    // lets get funky
                     switch (keyword) {
                         case "USE":
-                            File dbFile = sql.handleUse(line, keyword);
+                            File dbFile = handleUse(line, keyword);
                             refreshDB(dbFile);
                             return;
 
@@ -92,12 +100,10 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleCreateTable(line, keyword, this.database);
+                            creator.setDatabase(database);
+                            creator.setQuery(line);
+                            creator.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
-
-                        case "CREATE DATABASE":
-                            sql.handleCreateDatabase(line, keyword);
                             return;
 
                         case "DROP TABLE":
@@ -106,7 +112,9 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleDropTable(line, keyword, this.database);
+                            dropper.setDatabase(database);
+                            dropper.setQuery(line);
+                            dropper.handle();
                             refreshDB(this.database.getDbFile());
                             return;
 
@@ -128,7 +136,9 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleDeleteFrom(line, keyword, database);
+                            deletion.setDatabase(database);
+                            deletion.setQuery(line);
+                            deletion.handle();
                             refreshDB(this.database.getDbFile());
                             return;
 
@@ -138,7 +148,9 @@ public class Analyzer {
                             }
 
                             refreshDB(this.database.getDbFile());
-                            sql.handleUpdate(line, keyword, this.database);
+                            update.setDatabase(database);
+                            update.setQuery(line);
+                            update.handle();
                             refreshDB(this.database.getDbFile());
                             return;
 
@@ -153,6 +165,8 @@ public class Analyzer {
                             selection.handle();
                             refreshDB(this.database.getDbFile());
                             return;
+
+                        default: throw new IOException("NOT RECOGNIZABLE KEYWORDS");
                     }
 
                 } catch (StringIndexOutOfBoundsException e) {
@@ -163,33 +177,8 @@ public class Analyzer {
 
                 } catch (NoSuchFileException e) {
                     throw new NoSuchFileException("NOT A DATABASE: " + e.getMessage());
-
-                } catch (FileSystemException e) {
-                    throw new FileSystemException(e.getMessage());
-
-                } catch (DataTypeNotFoundException e) {
-                    throw new DataTypeNotFoundException(e.getMessage());
-
-                } catch (InsuficientDataProvidedException e) {
-                    throw new InsuficientDataProvidedException(e.getMessage());
-
-                } catch (ColumnDoesNotMatch e) {
-                    throw new ColumnDoesNotMatch(e.getMessage());
-
-                } catch (SQLSyntaxException e) {
-                    throw new SQLSyntaxException(e.getMessage());
-
-                } catch (IOException e) {
-                    throw new IOException(e.getMessage());
-
-                } catch (Exception e) {
-                    throw new Exception("AN ERROR OCURRED WHILE EXECUTING COMMAND: " + e.getMessage());
                 }
             }
-        }
-
-        if(!found){
-            throw new IOException("NOT RECOGNIZABLE KEYWORDS");
         }
     }
 
@@ -213,5 +202,24 @@ public class Analyzer {
         this.database = new Database();
         this.database.setDbFile(file);
         this.database.retrieveTables();
+    }
+
+    public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
+        String givenPath = Utils.clean(line,keyword);
+
+        File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
+        if(!database.exists()){
+            throw new FileNotFoundException();
+        }
+
+        if(!database.isDirectory()){
+            throw new NotDirectoryException("GIVEN PATH IS NOT A DIRECTORY: " + givenPath);
+        }
+
+        if(!database.getName().endsWith("_DB")){
+            throw new NoSuchFileException(givenPath);
+        }
+
+        return database;
     }
 }

@@ -1,18 +1,17 @@
-package edu.upvictoria.poo.SQLProcedures;
+package edu.upvictoria.poo.DMLProcedures;
 
 import edu.upvictoria.poo.Database;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.Utils;
 
-import edu.upvictoria.poo.SQLProcedures.Where.*;
+import edu.upvictoria.poo.DMLProcedures.Where.*;
 
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Selection {
     private String query;

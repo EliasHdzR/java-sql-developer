@@ -1,4 +1,4 @@
-package edu.upvictoria.poo.SQLProcedures;
+package edu.upvictoria.poo.DMLProcedures;
 
 import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.Database;
