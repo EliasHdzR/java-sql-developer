@@ -7,8 +7,8 @@ import edu.upvictoria.poo.Utils;
 
 import edu.upvictoria.poo.DMLProcedures.Where.*;
 
-import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public class Selection {
         this.query = query;
     }
 
-    public void handle() throws NoSuchFileException, ColumnDoesNotMatch, SQLSyntaxException, IndexOutOfBoundsException {
+    public void handle() throws NoSuchFileException, TableNotFoundException, SQLSyntaxException, IndexOutOfBoundsException {
         String cleanedLine = Utils.clean(query, keyword);
         String rawColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
         String selectedTable, whereLine = null;
@@ -36,13 +36,12 @@ public class Selection {
         ArrayList<ArrayList<Object>> wheredData;
 
         // Si la sentencia select contiene una clausula WHERE
-        if(cleanedLine.contains("WHERE")){
+        if(cleanedLine.contains("WHERE")) {
             String[] splitted = cleanedLine.split("WHERE");
             String[] splitted2 = splitted[0].split("FROM");
+
             selectedTable = splitted2[1].trim();
-            System.out.println(selectedTable);
             whereLine = splitted[1].trim();
-            System.out.println(whereLine);
         } else {
             String[] splitted = cleanedLine.split("FROM");
             selectedTable = splitted[1].trim();
@@ -50,9 +49,6 @@ public class Selection {
 
         // Obtener tabla
         Table table = database.getTableByName(selectedTable);
-        if(table == null){
-            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
 
         // Si selecciona columnas específicas
         if(!rawColumns.equals("*")){

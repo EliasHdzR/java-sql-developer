@@ -35,15 +35,16 @@ public class Analyzer {
     public Analyzer(){
         keywords.add("USE");
         keywords.add("SHOW TABLES");
-        keywords.add("CREATE DATABASE");
         keywords.add("CREATE TABLE");
         keywords.add("DROP TABLE");
         keywords.add("INSERT INTO");
-        keywords.add("DELETE FROM");
+        keywords.add("DELETE");
         keywords.add("UPDATE");
         keywords.add("SELECT");
+        keywords.add("FROM");
+        keywords.add("WHERE");
+        keywords.add("SET");
 
-        operators.add("DIV");
         operators.add("AND");
         operators.add("OR");
         operators.add("<=");
@@ -72,8 +73,16 @@ public class Analyzer {
         dataTypes.add("DOUBLE");
     }
 
+    /**
+     * Analiza la línea en busca de la KEYWORD inicial, después efectua diferentes acciones dependiendo de la Keyword.
+     * Por cada Keyword:
+     *     1.
+     * @param line
+     * @throws Exception
+     */
     public void analyzeSyntax(String line) throws Exception {
         line = line.replaceAll("\n"," ");
+        ArrayList<String> validKeywords = new ArrayList<>();
 
         for(String keyword : keywords){
             if (line.startsWith(keyword)) {
@@ -81,6 +90,8 @@ public class Analyzer {
                     // lets get funky
                     switch (keyword) {
                         case "USE":
+                            validKeywords.add("USE");
+                            Utils.hasValidKeywords(line, validKeywords);
                             File dbFile = handleUse(line, keyword);
                             refreshDB(dbFile);
                             return;
@@ -159,14 +170,20 @@ public class Analyzer {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
 
+                            validKeywords.add("SELECT");
+                            validKeywords.add("FROM");
+                            if(line.contains("WHERE")){
+                                validKeywords.add("WHERE");
+                            }
+
+                            Utils.hasValidKeywords(line, validKeywords);
+
                             refreshDB(this.database.getDbFile());
                             selection.setDatabase(database);
                             selection.setQuery(line);
                             selection.handle();
                             refreshDB(this.database.getDbFile());
                             return;
-
-                        default: throw new IOException("NOT RECOGNIZABLE KEYWORDS");
                     }
 
                 } catch (StringIndexOutOfBoundsException e) {

@@ -24,7 +24,7 @@ public class CreateTable {
         this.database = database;
     }
 
-    public void handle() throws IOException {
+    public void handle() throws DataTypeNotFoundException, StringIndexOutOfBoundsException, DuplicateEntryException, IOException {
         String cleanedLine = Utils.clean(query, keyword);
         ArrayList<Column> columns = splitValues(cleanedLine);
         ArrayList<String> duplicates = new ArrayList<>();

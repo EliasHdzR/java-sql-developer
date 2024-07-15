@@ -71,6 +71,11 @@ public class Table {
         }
     }
 
+    /**
+    ////////////////////////////////////////////
+    //////////// GETTERS Y SETTERS /////////////
+    ////////////////////////////////////////////
+    */
     public File getTableFile() {
         return tableFile;
     }
@@ -90,6 +95,44 @@ public class Table {
     public void setData(ArrayList<ArrayList<Object>> data) {
         this.data = data;
     }
+
+    public ArrayList<String> getColumnsName(){
+        ArrayList<String> columnsName = new ArrayList<>();
+
+        for(Column column : columns){
+            columnsName.add(column.getName());
+        }
+
+        return columnsName;
+    }
+
+    public int getColumnPos(String columnName){
+        ArrayList<String> columnsName = getColumnsName();
+
+        for(int i = 0; i < columnsName.size(); i++){
+            if(columnName.equals(columnsName.get(i))){
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public Column getColumnByName(String name){
+        for(Column column : columns){
+            if(column.getName().equals(name)){
+                return column;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     ////////////////////////////////////////////
+     /////////////// TABLA UTILS ////////////////
+     ////////////////////////////////////////////
+     */
 
     public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws IOException {
         ArrayList<Object> newData = new ArrayList<>();
@@ -223,35 +266,7 @@ public class Table {
         }
     }
 
-    public ArrayList<String> getColumnsName(){
-        ArrayList<String> columnsName = new ArrayList<>();
+    public void updateData(){
 
-        for(Column column : columns){
-            columnsName.add(column.getName());
-        }
-
-        return columnsName;
-    }
-
-    public int getColumnPos(String columnName){
-        ArrayList<String> columnsName = getColumnsName();
-
-        for(int i = 0; i < columnsName.size(); i++){
-            if(columnName.equals(columnsName.get(i))){
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    public Column getColumnByName(String name){
-        for(Column column : columns){
-            if(column.getName().equals(name)){
-                return column;
-            }
-        }
-
-        return null;
     }
 }

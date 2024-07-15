@@ -1,21 +1,20 @@
 package edu.upvictoria.poo.DMLProcedures;
 
-import edu.upvictoria.poo.Database;
+import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.DMLProcedures.Where.Tree;
 import edu.upvictoria.poo.DMLProcedures.Where.Where;
+import edu.upvictoria.poo.Database;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Update {
     private String query;
     private Database database;
-    private final String keyword = "UPDATE";
+    private ArrayList<String> validKeywords;
 
     public void setDatabase(Database database) {
         this.database = database;
@@ -25,56 +24,91 @@ public class Update {
         this.query = query;
     }
 
-    public void handle() throws SQLSyntaxException, NoSuchFileException {
-        String cleanedLine = Utils.clean(query,keyword), selectedTable, whereLine = null, rawUpdateData;
-        boolean tableExists = false;
-        ArrayList<String> whereTokens;
-        ArrayList<ArrayList<Object>> wheredData;
-        ArrayList<String> updateData = new ArrayList<>();
+    private void setValidKeywords(){
+        validKeywords = new ArrayList<>();
+        validKeywords.add("UPDATE");
+        validKeywords.add("SET");
 
-        String format1 = "^'.+'";
-        String format2 = "^\\d*";
+        if (query.contains("WHERE")){
+            validKeywords.add("WHERE");
+        }
+    }
 
-        Pattern pattern1 = Pattern.compile(format1);
-        Pattern pattern2 = Pattern.compile(format2);
-        Matcher matcher1, matcher2;
+    public void handle() throws TableNotFoundException, SQLSyntaxException {
+        setValidKeywords();
+        Utils.hasValidKeywords(query, validKeywords);
 
+        String cleanedLine = Utils.clean(query);
+        ArrayList<String> tokensWithoutKeywords = Utils.splitByWords(cleanedLine, validKeywords);
+        ArrayList<String> setTokens, whereTokens;
+        ArrayList<Integer> columnsToModify = new ArrayList<>();
+        ArrayList<ArrayList <Object>> dataToModify;
 
-        if(!cleanedLine.contains("SET")){
-            throw new SQLSyntaxException("MISSING 'SET' KEYWORD");
+        Table table = database.getTableByName(tokensWithoutKeywords.get(0));
+        String setClausule = tokensWithoutKeywords.get(1);
+        setTokens = parseSetClausule(setClausule);
+
+        if(validKeywords.contains("WHERE")){
+            whereTokens = Utils.getWhereTokens(tokensWithoutKeywords.get(2), table);
+            whereTokens = Where.infixToPostfix(whereTokens);
+            Tree.Node root = Where.createTree(whereTokens);
+            dataToModify = Where.evaluateTree(root, table.getData(), table);
+        } else {
+            dataToModify = table.getData();
         }
 
-        selectedTable = cleanedLine.substring(0,cleanedLine.indexOf("SET")).trim();
+        // se obtienen las posiciones en el array de las columnas
+        for(int i = 0; i < setTokens.size(); i+=2){
+            columnsToModify.add(table.getColumnPos(setTokens.get(i)));
+        }
 
-        try {
-            if(cleanedLine.contains("WHERE")){
-                rawUpdateData = cleanedLine.substring(cleanedLine.indexOf("SET") + "SET".length(), cleanedLine.indexOf("WHERE")).trim();
-                whereLine = cleanedLine.substring(cleanedLine.indexOf("WHERE") + "WHERE".length() + 1).trim();
-            } else {
-                rawUpdateData = cleanedLine.substring(cleanedLine.indexOf("SET") + "SET".length()).trim();
+        int i = 1, counter = 0;
+        for(ArrayList<Object> datum : dataToModify){
+            for(Integer columnPosition : columnsToModify){
+                datum.set(columnPosition, setTokens.get(i));
+                i += 2;
+                counter++;
             }
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new SQLSyntaxException("MISSING KEYWORDS");
+            i = 1;
         }
 
-        ArrayList<Table> tables = database.getTables();
-        for(Table table : tables){
-            if(table.getTableName().equals(selectedTable)){
-                tableExists = true;
+        System.out.println(counter + " ROWS UPDATED");
+    }
 
-                if(whereLine != null){
-                    whereTokens = Utils.getWhereTokens(whereLine,table);
-                    whereTokens = Where.infixToPostfix(whereTokens);
-                    Tree.Node root = Where.createTree(whereTokens);
-                    wheredData = Where.evaluateTree(root, table.getData(), table);
-                } else {
-                    wheredData = table.getData();
-                }
+    /**
+     * Separa la clausula set primero en comas y luego en '=', el lado izquierdo y derecho de la asignación son
+     * almacenados
+     * @param setClausule String que contiene a la cláusula set
+     * @return Array con la columna y el valor a modificar, siempre es un numero par
+     * @throws SQLSyntaxException Cuando se haya escrito mal la sintaxis de la clausula
+     */
+    public ArrayList<String> parseSetClausule (String setClausule) throws SQLSyntaxException {
+        ArrayList<String> setTokens = new ArrayList<>();
+        String[] rawAssignations = setClausule.split(",");
+
+        for (String rawAssignation : rawAssignations) {
+            String[] splitAssignments = rawAssignation.split("=");
+            if (splitAssignments.length != 2) {
+                throw new SQLSyntaxException(setClausule + " IS NOT A VALID SET CLAUSULE");
             }
+
+            splitAssignments[0] = splitAssignments[0].trim();
+            splitAssignments[1] = splitAssignments[1].trim();
+
+            if(splitAssignments[1].startsWith("'") && splitAssignments[1].endsWith("'")){
+                splitAssignments[1] = splitAssignments[1].substring(1, splitAssignments[1].length()-1).trim();
+            }
+
+            // por si las comillas simples no matchean
+            if((!splitAssignments[1].startsWith("'") && splitAssignments[1].endsWith("'"))
+                || (splitAssignments[1].startsWith("'") && !splitAssignments[1].endsWith("'"))){
+                throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
+            }
+
+            setTokens.add(splitAssignments[0]);
+            setTokens.add(splitAssignments[1]);
         }
 
-        if(!tableExists){
-            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
+        return setTokens;
     }
 }

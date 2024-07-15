@@ -125,6 +125,8 @@ public class Where {
         String columnType = table.getColumns().get(columnPos).getType();
 
         String rowValue = row.get(columnPos).toString();
+        if(rowValue == null || rowValue.isEmpty() || rowValue.isBlank() || rowValue.equals("\0")) return false;
+
         String operator = (String) conditionValues[1];
         Double rowDoubleValue = null, columnDoubleValue = null;
         Integer rowIntegerValue = null, columnIntegerValue = null;

@@ -1,5 +1,7 @@
 package edu.upvictoria.poo;
 
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
+
 import java.io.File;
 import java.nio.file.FileSystemException;
 import java.util.ArrayList;
@@ -48,13 +50,13 @@ public class Database {
      * @param tableName
      * @return A table given its name
      */
-    public Table getTableByName(String tableName){
+    public Table getTableByName(String tableName) throws TableNotFoundException {
         for(Table table : this.tables){
             if(table.getTableName().equals(tableName)){
                 return table;
             }
         }
 
-        return null;
+        throw new TableNotFoundException("TABLE " + tableName + " DOES NOT EXISTS");
     }
 }

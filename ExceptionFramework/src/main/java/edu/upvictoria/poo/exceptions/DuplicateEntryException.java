@@ -1,8 +1,8 @@
 package edu.upvictoria.poo.exceptions;
 
-import java.io.IOException;
+import java.sql.SQLSyntaxErrorException;
 
-public class DuplicateEntryException extends IOException {
+public class DuplicateEntryException extends SQLSyntaxErrorException {
 
     public DuplicateEntryException(String message) {
         super(message);
