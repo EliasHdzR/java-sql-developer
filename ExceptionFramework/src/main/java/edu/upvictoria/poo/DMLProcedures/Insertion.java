@@ -8,6 +8,7 @@ import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -27,7 +28,7 @@ public class Insertion {
         this.query = query;
     }
 
-    public void handle() throws IOException, StringIndexOutOfBoundsException {
+    public void handle() throws TableNotFoundException, SQLSyntaxException, InsuficientDataProvidedException, NoSuchFileException, ColumnDoesNotMatch, StringIndexOutOfBoundsException {
         String cleanedLine, cleanedLine_v2, cleanedLine_v3;
         ArrayList<String> insertionColumns, insertionData;
         ArrayList<Column> tableColumns = new ArrayList<>();

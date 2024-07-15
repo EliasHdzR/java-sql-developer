@@ -2,6 +2,8 @@ package edu.upvictoria.poo;
 
 // OBJECT IS THE WAY
 
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -134,7 +136,7 @@ public class Table {
      ////////////////////////////////////////////
      */
 
-    public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws IOException {
+    public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws TableNotFoundException {
         ArrayList<Object> newData = new ArrayList<>();
 
         for(int i = 0; i < this.columns.size(); i++){
@@ -161,7 +163,7 @@ public class Table {
         writeDataToFile();
     }
 
-    public void writeDataToFile() throws IOException {
+    public void writeDataToFile() throws TableNotFoundException {
         Charset charset = StandardCharsets.UTF_8;
         StringBuilder line = new StringBuilder();
 
@@ -204,12 +206,12 @@ public class Table {
                 line = new StringBuilder();
             }
         } catch (IOException e) {
-            throw new IOException("TABLE DOES NOT EXISTS");
+            throw new TableNotFoundException("TABLE DOES NOT EXISTS");
         }
     }
 
     //PARA LA PRIMERA INSERCION DE NOMBRES DE COLUMNA EN LA TABLA
-    public void writeDataToFile(ArrayList<String> rowData) throws IOException {
+    public void writeDataToFile(ArrayList<String> rowData) throws TableNotFoundException {
         Charset charset = StandardCharsets.UTF_8;
         StringBuilder line = new StringBuilder();
 
@@ -229,7 +231,7 @@ public class Table {
             out.println(line);
             out.flush();
         } catch (IOException e) {
-            throw new IOException("TABLE DOES NOT EXISTS");
+            throw new TableNotFoundException("TABLE DOES NOT EXISTS");
         }
     }
 
@@ -266,7 +268,16 @@ public class Table {
         }
     }
 
-    public void updateData(){
+    public void updateData(ArrayList<ArrayList<Object>> originalData, ArrayList<ArrayList<Object>> newData) throws TableNotFoundException {
+        for(ArrayList<Object> row : data){
+            for(int i = 0; i < originalData.size(); i++){
+                ArrayList<Object> originalRow = originalData.get(i);
+                if(row.equals(originalRow)){
+                    row = newData.get(i);
+                }
+            }
+        }
 
+        writeDataToFile();
     }
 }

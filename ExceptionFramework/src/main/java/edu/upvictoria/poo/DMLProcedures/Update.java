@@ -9,6 +9,7 @@ import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Update {
@@ -42,7 +43,7 @@ public class Update {
         ArrayList<String> tokensWithoutKeywords = Utils.splitByWords(cleanedLine, validKeywords);
         ArrayList<String> setTokens, whereTokens;
         ArrayList<Integer> columnsToModify = new ArrayList<>();
-        ArrayList<ArrayList <Object>> dataToModify;
+        ArrayList<ArrayList <Object>> dataToModify, dataToModifyCopy;
 
         Table table = database.getTableByName(tokensWithoutKeywords.get(0));
         String setClausule = tokensWithoutKeywords.get(1);
@@ -57,6 +58,8 @@ public class Update {
             dataToModify = table.getData();
         }
 
+        dataToModifyCopy = new ArrayList<>(dataToModify);
+
         // se obtienen las posiciones en el array de las columnas
         for(int i = 0; i < setTokens.size(); i+=2){
             columnsToModify.add(table.getColumnPos(setTokens.get(i)));
@@ -67,11 +70,12 @@ public class Update {
             for(Integer columnPosition : columnsToModify){
                 datum.set(columnPosition, setTokens.get(i));
                 i += 2;
-                counter++;
             }
             i = 1;
+            counter++;
         }
 
+        table.updateData(dataToModifyCopy, dataToModify);
         System.out.println(counter + " ROWS UPDATED");
     }
 

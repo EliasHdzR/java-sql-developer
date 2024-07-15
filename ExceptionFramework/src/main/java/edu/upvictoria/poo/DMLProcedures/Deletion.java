@@ -5,6 +5,8 @@ import edu.upvictoria.poo.DMLProcedures.Where.Tree;
 import edu.upvictoria.poo.DMLProcedures.Where.Where;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.Utils;
+import edu.upvictoria.poo.exceptions.SQLSyntaxException;
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -23,7 +25,7 @@ public class Deletion {
         this.database = database;
     }
 
-    public void handle() throws IOException, StringIndexOutOfBoundsException {
+    public void handle() throws TableNotFoundException, SQLSyntaxException, NoSuchFileException, StringIndexOutOfBoundsException {
         String cleanedLine = Utils.clean(query, keyword), selectedTable, whereLine = null;
         boolean tableExists = false;
         ArrayList<String> whereTokens;

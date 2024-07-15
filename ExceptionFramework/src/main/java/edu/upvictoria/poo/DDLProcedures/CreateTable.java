@@ -3,6 +3,7 @@ package edu.upvictoria.poo.DDLProcedures;
 import edu.upvictoria.poo.*;
 import edu.upvictoria.poo.exceptions.DataTypeNotFoundException;
 import edu.upvictoria.poo.exceptions.DuplicateEntryException;
+import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class CreateTable {
         this.database = database;
     }
 
-    public void handle() throws DataTypeNotFoundException, StringIndexOutOfBoundsException, DuplicateEntryException, IOException {
+    public void handle() throws DataTypeNotFoundException, StringIndexOutOfBoundsException, DuplicateEntryException, IOException, TableNotFoundException {
         String cleanedLine = Utils.clean(query, keyword);
         ArrayList<Column> columns = splitValues(cleanedLine);
         ArrayList<String> duplicates = new ArrayList<>();
