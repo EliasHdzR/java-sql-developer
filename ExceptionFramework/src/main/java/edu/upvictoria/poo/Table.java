@@ -4,18 +4,12 @@ package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.PrintWriter;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 
 public class Table {
     private final String tableName;
@@ -168,25 +162,18 @@ public class Table {
         StringBuilder line = new StringBuilder();
 
         try{
-            FileWriter fw = new FileWriter(this.tableFile, charset);
-            BufferedWriter bw = new BufferedWriter(fw);
+            FileOutputStream fos = new FileOutputStream(this.tableFile);
+            OutputStreamWriter osw = new OutputStreamWriter(fos, charset);
+            BufferedWriter bw = new BufferedWriter(osw);
             PrintWriter out = new PrintWriter(bw);
 
             for(int i = 0; i < this.columns.size(); i++){
                 Column column = this.columns.get(i);
-                String constraint;
-                if(column.getConstraint() == null){
-                    constraint = "\0";
-                } else {
-                    constraint = column.getConstraint();
-                }
-
-                line.append(column.getName()).append(" ").append(column.getType()).append(" ").append(constraint);
+                line.append(column.getName()).append(" ").append(column.getType()).append(" ").append(column.getConstraint());
 
                 if(i != this.columns.size()-1){
                     line.append(",");
                 }
-
             }
 
             out.println(line);
@@ -205,6 +192,8 @@ public class Table {
                 out.flush();
                 line = new StringBuilder();
             }
+
+            out.close();
         } catch (IOException e) {
             throw new TableNotFoundException("TABLE DOES NOT EXISTS");
         }

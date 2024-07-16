@@ -117,11 +117,17 @@ public class Insertion {
         String[] values = query.split(",");
 
         for(int i = 0; i < values.length; i++){
-            if(!(values[i].startsWith("'") && values[i].endsWith("'"))){
-                throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION VALUES");
+            if(values[i].startsWith("'") && values[i].endsWith("'")){
+                values[i] = values[i].replace("'", "");
             }
+
+            // por si las comillas simples no matchean
+            if((!values[i].startsWith("'") && values[i].endsWith("'"))
+                    || (values[i].startsWith("'") && !values[i].endsWith("'"))){
+                throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
+            }
+
             values[i] = values[i].trim();
-            values[i] = values[i].replace("'", "");
         }
 
         return new ArrayList<>(Arrays.asList(values));

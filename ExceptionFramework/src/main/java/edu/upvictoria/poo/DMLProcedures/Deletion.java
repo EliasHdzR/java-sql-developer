@@ -8,7 +8,6 @@ import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
-import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 

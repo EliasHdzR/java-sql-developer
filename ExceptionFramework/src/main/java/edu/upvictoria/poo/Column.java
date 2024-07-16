@@ -20,6 +20,9 @@ public class Column {
     }
 
     public String getConstraint() {
+        if(constraint == null){
+            return "\0";
+        }
         return constraint;
     }
 }

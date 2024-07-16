@@ -19,7 +19,7 @@ public class App {
         while(true){
             System.out.print("$> ");
             try{
-                line = reader.consoleReader(analyzer);
+                line = reader.consoleReader();
                 analyzer.analyzeSyntax(line);
             } catch (Exception e){
                 System.out.println("ERR: " + e.getMessage() + "\n");

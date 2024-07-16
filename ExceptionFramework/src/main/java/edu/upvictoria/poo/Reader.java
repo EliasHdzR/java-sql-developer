@@ -8,7 +8,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class Reader {
-    public String consoleReader(Analyzer analyzer) throws SQLSyntaxException {
+    public String consoleReader() throws SQLSyntaxException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
         try{
@@ -20,7 +20,11 @@ public class Reader {
                     continue;
                 }
 
-                inputLines.append(input.toUpperCase().trim());
+                if(input.startsWith("USE")){
+                    inputLines.append(input.trim());
+                } else {
+                    inputLines.append(input.toUpperCase().trim());
+                }
 
                 int index = input.indexOf(";");
                 int index2 = input.indexOf(";",index + 1);
@@ -33,7 +37,7 @@ public class Reader {
                 }
             }
 
-            inputLines = formatInput(inputLines, analyzer);
+            inputLines = formatInput(inputLines);
             return inputLines.toString();
 
         } catch (IOException e) {
@@ -41,12 +45,12 @@ public class Reader {
         }
     }
 
-    public StringBuffer formatInput(StringBuffer input, Analyzer analyzer) throws SQLSyntaxException {
+    public StringBuffer formatInput(StringBuffer input) throws SQLSyntaxException {
         int lastIndex = 0;
         ArrayList<String> foundKeywords = new ArrayList<>();
 
-        for(int i = 0; i < analyzer.getKeywords().size(); i++){
-            String keyword = analyzer.getKeywords().get(i);
+        for(int i = 0; i < Analyzer.getKeywords().size(); i++){
+            String keyword = Analyzer.getKeywords().get(i);
             int index = input.indexOf(keyword + " ", lastIndex);
 
             if(index != -1){

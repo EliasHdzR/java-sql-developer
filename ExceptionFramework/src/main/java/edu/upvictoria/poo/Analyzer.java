@@ -20,7 +20,7 @@ import java.io.File;
 public class Analyzer {
     private static final ArrayList<String> keywords = new ArrayList<>(List.of(
             "USE", "SHOW TABLES", "CREATE TABLE", "DROP TABLE",
-            "INSERT INTO", "DELETE", "UPDATE", "SELECT",
+            "INSERT INTO", "DELETE FROM", "UPDATE", "SELECT",
             "FROM", "WHERE", "SET"
     ));
 
@@ -193,7 +193,7 @@ public class Analyzer {
         this.database.retrieveTables();
     }
 
-    public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException {
+    public File handleUse(String line, String keyword) throws FileSystemException, StringIndexOutOfBoundsException, FileNotFoundException, DatabaseNotSetException {
         String givenPath = Utils.clean(line,keyword);
 
         File database = new File(Paths.get("").toAbsolutePath().resolve(givenPath).toString());
@@ -209,6 +209,9 @@ public class Analyzer {
             throw new NoSuchFileException(givenPath);
         }
 
+        if(!database.canWrite() &&  !database.canRead()){
+            throw new DatabaseNotSetException("NOT PERMISSIONS GIVEN");
+        }
         return database;
     }
 }
