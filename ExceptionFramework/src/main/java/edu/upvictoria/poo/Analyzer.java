@@ -9,19 +9,32 @@ import edu.upvictoria.poo.DMLProcedures.Update;
 import edu.upvictoria.poo.exceptions.*;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.io.File;
 
 public class Analyzer {
-    private final ArrayList<String> keywords = new ArrayList<>();
-    private final ArrayList<String> dataTypes = new ArrayList<>();
-    private final ArrayList<String> operators = new ArrayList<>();
-    private final ArrayList<String> constraints = new ArrayList<>();
+    private static final ArrayList<String> keywords = new ArrayList<>(List.of(
+            "USE", "SHOW TABLES", "CREATE TABLE", "DROP TABLE",
+            "INSERT INTO", "DELETE", "UPDATE", "SELECT",
+            "FROM", "WHERE", "SET"
+    ));
+
+    private static final ArrayList<String> dataTypes = new ArrayList<>(List.of(
+            "VARCHAR","CHAR","BOOLEAN","DATE","INT","DOUBLE"
+    ));
+
+    private static final ArrayList<String> operators = new ArrayList<>(List.of(
+            "AND","OR","<=",">=","=","<",">","!=","(",")"
+    ));
+
+    private static final ArrayList<String> constraints = new ArrayList<>(List.of(
+            "NOT NULL","PRIMARY KEY","FOREIGN KEY"
+    ));
 
     private Database database = new Database();
 
@@ -31,47 +44,6 @@ public class Analyzer {
     private final Update update = new Update();
     private final CreateTable creator = new CreateTable();
     private final DropTable dropper = new DropTable();
-    
-    public Analyzer(){
-        keywords.add("USE");
-        keywords.add("SHOW TABLES");
-        keywords.add("CREATE TABLE");
-        keywords.add("DROP TABLE");
-        keywords.add("INSERT INTO");
-        keywords.add("DELETE");
-        keywords.add("UPDATE");
-        keywords.add("SELECT");
-        keywords.add("FROM");
-        keywords.add("WHERE");
-        keywords.add("SET");
-
-        operators.add("AND");
-        operators.add("OR");
-        operators.add("<=");
-        operators.add(">=");
-        operators.add("=");
-        operators.add("<");
-        operators.add(">");
-        operators.add("!=");
-        operators.add("(");
-        operators.add(")");
-        operators.add("*");
-        operators.add("+");
-        operators.add("-");
-        operators.add("/");
-        operators.add("%");
-
-        constraints.add("NOT NULL");
-        constraints.add("PRIMARY KEY");
-        constraints.add("FOREIGN KEY");
-
-        dataTypes.add("VARCHAR");
-        dataTypes.add("CHAR");
-        dataTypes.add("BOOLEAN");
-        dataTypes.add("DATE");
-        dataTypes.add("INT");
-        dataTypes.add("DOUBLE");
-    }
 
     /**
      * Analiza la línea en busca de la KEYWORD inicial, después efectua diferentes acciones dependiendo de la Keyword.
@@ -199,19 +171,19 @@ public class Analyzer {
         }
     }
 
-    public ArrayList<String> getKeywords() {
+    public static ArrayList<String> getKeywords() {
         return keywords;
     }
 
-    public ArrayList<String> getDataTypes() {
+    public static ArrayList<String> getDataTypes() {
         return dataTypes;
     }
 
-    public ArrayList<String> getConstraints() {
+    public static ArrayList<String> getConstraints() {
         return constraints;
     }
 
-    public ArrayList<String> getOperators() {
+    public static ArrayList<String> getOperators() {
         return operators;
     }
 

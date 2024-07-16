@@ -59,9 +59,8 @@ public class CreateTable {
     }
 
     private ArrayList<Column> splitValues(String line) throws DataTypeNotFoundException, StringIndexOutOfBoundsException {
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> dataTypes = analyzer.getDataTypes();
-        ArrayList<String> constraints = analyzer.getConstraints();
+        ArrayList<String> dataTypes = Analyzer.getDataTypes();
+        ArrayList<String> constraints = Analyzer.getConstraints();
 
         ArrayList<Column> columns = new ArrayList<>();
         String tableName, cName, cDataType = null, cConstraint = null;

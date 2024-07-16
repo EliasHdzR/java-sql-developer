@@ -41,7 +41,6 @@ public class Utils {
      * @throws IndexOutOfBoundsException
      */
     public static ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
-        Analyzer analyzer = new Analyzer();
         ArrayList<String> whereTokens = new ArrayList<>();
         String value;
 
@@ -60,8 +59,8 @@ public class Utils {
         while(!line.isBlank()){
             String initStateLine = line;
 
-            for(int i = 0; i < analyzer.getOperators().size(); i++){
-                String operator = analyzer.getOperators().get(i);
+            for(int i = 0; i < Analyzer.getOperators().size(); i++){
+                String operator = Analyzer.getOperators().get(i);
 
                 if(line.startsWith(operator)){
                     if(operator.equals("(") || operator.equals(")") || operator.equals("AND") || operator.equals("OR")){
@@ -82,6 +81,10 @@ public class Utils {
                 }
             }
 
+            if(line.isBlank()){
+                return whereTokens;
+            }
+
             for(int i = 0; i < table.getColumnsName().size(); i++){
                 String columnName = table.getColumnsName().get(i);
 
@@ -90,6 +93,10 @@ public class Utils {
                     line = line.substring(line.indexOf(columnName) + columnName.length()).trim();
                     break;
                 }
+            }
+
+            if(line.isBlank()){
+                return whereTokens;
             }
 
             if(line.startsWith("NULL")){
@@ -102,6 +109,10 @@ public class Utils {
                 lastToken += " \0";
                 whereTokens.set(whereTokens.size()-1, lastToken);
                 line = line.substring(line.indexOf("NULL") + "NULL".length()).trim();
+            }
+
+            if(line.isBlank()){
+                return whereTokens;
             }
 
             matcher1 = pattern1.matcher(line);
@@ -121,6 +132,10 @@ public class Utils {
                 continue;
             }
 
+            if(line.isBlank()){
+                return whereTokens;
+            }
+
             matcher2 = pattern2.matcher(line);
             if(matcher2.find()) {
                 String lastToken = whereTokens.get(whereTokens.size()-1);
@@ -135,6 +150,10 @@ public class Utils {
                 line = line.substring(line.indexOf(value) + value.length() + 1).trim();
 
                 continue;
+            }
+
+            if(line.isBlank()){
+                return whereTokens;
             }
 
             matcher3 = pattern3.matcher(line);
@@ -167,8 +186,7 @@ public class Utils {
      * @throws SQLSyntaxException
      */
     public static void hasValidKeywords(String query, ArrayList<String> validKeywords) throws SQLSyntaxException {
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> keywords = analyzer.getKeywords();
+        ArrayList<String> keywords = Analyzer.getKeywords();
         Set<String> foundKeywords = getQueryKeywords(query, validKeywords, keywords);
 
         String[] fKeywords = foundKeywords.toArray(new String[foundKeywords.size()]);

@@ -63,8 +63,7 @@ public class Where {
     }
 
     public static Tree.Node createTree(ArrayList<String> tokens) {
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> operators = analyzer.getOperators();
+        ArrayList<String> operators = Analyzer.getOperators();
         Stack<Tree.Node> stack = new Stack<>();
 
         for (String token : tokens) {
@@ -98,8 +97,7 @@ public class Where {
     public static boolean evaluateRowInTree(Tree.Node root, ArrayList<Object> row, Table table) throws SQLSyntaxException{
         if(root == null) return true;
 
-        Analyzer analyzer = new Analyzer();
-        ArrayList<String> operators = analyzer.getOperators();
+        ArrayList<String> operators = Analyzer.getOperators();
 
         if(operators.contains(root.value)){
             boolean left = evaluateRowInTree(root.left, row, table);
@@ -120,6 +118,12 @@ public class Where {
 
     public static boolean evaluateCondition(String condition, ArrayList<Object> row, Table table) throws SQLSyntaxException {
         Object[] conditionValues = condition.split(" ");
+
+        if(conditionValues.length > 3){
+            for(int i = 3; i < conditionValues.length; i++){
+                conditionValues[2] +=  " " + conditionValues[i];
+            }
+        }
 
         int columnPos = table.getColumnPos((String)conditionValues[0]);
         String columnType = table.getColumns().get(columnPos).getType();
