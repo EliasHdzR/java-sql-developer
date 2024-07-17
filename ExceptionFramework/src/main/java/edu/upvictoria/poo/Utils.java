@@ -41,141 +41,66 @@ public class Utils {
      * @throws IndexOutOfBoundsException
      */
     public static ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
-        ArrayList<String> whereTokens = new ArrayList<>();
-        String value;
-
-        String format1 = "^'.+'";
-        String format2 = "^\\d*\\s+";
-        String format3 = "^\\d*$";
-
-        Pattern pattern1 = Pattern.compile(format1);
-        Pattern pattern2 = Pattern.compile(format2);
-        Pattern pattern3 = Pattern.compile(format3);
-        Matcher matcher1, matcher2, matcher3;
-
         line = line.replaceAll("<>","!=");
         line = line.replaceAll("^=","!=");
 
-        while(!line.isBlank()){
-            String initStateLine = line;
 
-            for(int i = 0; i < Analyzer.getOperators().size(); i++){
-                String operator = Analyzer.getOperators().get(i);
+        ArrayList<String> operatorKeywords = Analyzer.getOperators();
+        operatorKeywords.set(0, " AND ");
+        operatorKeywords.set(1, " OR ");
 
-                if(line.startsWith(operator)){
-                    if(operator.equals("(") || operator.equals(")") || operator.equals("AND") || operator.equals("OR")){
-                        whereTokens.add(operator);
-                    } else {
-                        String lastToken = whereTokens.get(whereTokens.size()-1);
+        ArrayList<String> tokensWithoutOperators = splitByWords(line, operatorKeywords);
+        ArrayList<String> operatorTokens = splitByWords(line, tokensWithoutOperators);
+        ArrayList<String> temp = new ArrayList<>();
 
-                        if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                            throw new SQLSyntaxException("UNEXPECTED OPERATOR: " + operator);
-                        }
-
-                        lastToken += (" " + operator);
-                        whereTokens.set(whereTokens.size()-1, lastToken);
-                    }
-
-                    line = line.substring(line.indexOf(operator) + operator.length()).trim();
-                    break;
+        for(String operator : operatorTokens){
+            String[] aux = operator.split(" ");
+            for(String token : aux){
+                if(Analyzer.getOperators().contains(token)){
+                    temp.add(token);
                 }
-            }
-
-            if(line.isBlank()){
-                return whereTokens;
-            }
-
-            for(int i = 0; i < table.getColumnsName().size(); i++){
-                String columnName = table.getColumnsName().get(i);
-
-                if(line.startsWith(columnName)){
-                    whereTokens.add(columnName);
-                    line = line.substring(line.indexOf(columnName) + columnName.length()).trim();
-                    break;
-                }
-            }
-
-            if(line.isBlank()){
-                return whereTokens;
-            }
-
-            if(line.startsWith("NULL")){
-                String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                    throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                }
-
-                lastToken += " \0";
-                whereTokens.set(whereTokens.size()-1, lastToken);
-                line = line.substring(line.indexOf("NULL") + "NULL".length()).trim();
-            }
-
-            if(line.isBlank()){
-                return whereTokens;
-            }
-
-            matcher1 = pattern1.matcher(line);
-            if(matcher1.find()){
-                String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                    throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                }
-
-                line = line.substring(1);
-                value = line.substring(0, line.indexOf("'")).trim();
-                lastToken += (" " + value);
-                whereTokens.set(whereTokens.size()-1, lastToken);
-                line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-
-                continue;
-            }
-
-            if(line.isBlank()){
-                return whereTokens;
-            }
-
-            matcher2 = pattern2.matcher(line);
-            if(matcher2.find()) {
-                String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                    throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                }
-
-                value = line.substring(0, line.indexOf(" ")).trim();
-                lastToken += (" " + value);
-                whereTokens.set(whereTokens.size()-1, lastToken);
-                line = line.substring(line.indexOf(value) + value.length() + 1).trim();
-
-                continue;
-            }
-
-            if(line.isBlank()){
-                return whereTokens;
-            }
-
-            matcher3 = pattern3.matcher(line);
-            if(matcher3.find()) {
-                String lastToken = whereTokens.get(whereTokens.size()-1);
-
-                if(!table.getColumnsName().contains(lastToken.split(" ")[0])){
-                    throw new SQLSyntaxException("UNEXPECTED OPERATOR: NULL");
-                }
-
-                value = line.trim();
-                lastToken += (" " + value);
-                whereTokens.set(whereTokens.size()-1, lastToken);
-                line = line.substring(line.indexOf(value) + value.length()).trim();
-            }
-
-            if(initStateLine.equals(line)){
-                throw new SQLSyntaxException("MALFORMED STATEMENT AT > " + line);
             }
         }
 
-        return whereTokens;
+        operatorTokens = temp;
+        //System.out.println(tokensWithoutOperators);
+        //System.out.println(operatorTokens);
+
+        // validar que el select tenga duplas [columna] [valor]
+        if(tokensWithoutOperators.size()%2 != 0){
+            throw new SQLSyntaxException("WHERE CLAUSE MALFORMED");
+        }
+
+        for(int i = 0; i < tokensWithoutOperators.size(); i+=2){
+            String token = tokensWithoutOperators.get(i);
+            if(!table.getColumnsName().contains(token)){
+                throw new SQLSyntaxException("UNDEFINED COLUMN: " + token);
+            }
+        }
+
+        for(int i = 0;  i < tokensWithoutOperators.size(); i++){
+            String token = tokensWithoutOperators.get(i);
+            if(token.startsWith("'") && token.endsWith("'")){
+                token = token.substring(1, token.length()-1);
+                tokensWithoutOperators.set(i, token);
+            }
+
+            if((!token.startsWith("'") && token.endsWith("'"))
+                    || token.startsWith("'") && token.endsWith("'")){
+                throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
+            }
+        }
+
+        int j = 0;
+        for(int i = 0; i < operatorTokens.size(); i++){
+            String operator = operatorTokens.get(i);
+            if(Analyzer.getOperators().contains(operator) && !operator.equals("AND") && !operator.equals("OR")
+                && !operator.equals("(") && !operator.equals(")")){
+                operatorTokens.set(i, tokensWithoutOperators.get(j)+ " " + operator + " " + tokensWithoutOperators.get(j+1));
+                j+=2;
+            }
+        }
+        return operatorTokens;
     }
 
     /**
@@ -238,7 +163,7 @@ public class Utils {
      * @return Un ArrayList<String> con las palabras divididas sin contener a los divisores
      * @throws SQLSyntaxException
      */
-    public static ArrayList<String> splitByWords(String line, ArrayList<String> words) throws SQLSyntaxException {
+    public static ArrayList<String> splitByWords(String line, ArrayList<String> words) {
         ArrayList<String> tokens = new ArrayList<>();
         String token;
 
@@ -258,7 +183,7 @@ public class Utils {
         while (matcher.find()) {
             if (matcher.start() > lastEnd) {
                 token = line.substring(lastEnd, matcher.start()).trim();
-                if(!token.isEmpty()){
+                if (!token.isEmpty()) {
                     tokens.add(token);
                 }
             }

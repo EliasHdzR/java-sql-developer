@@ -1,6 +1,5 @@
 package edu.upvictoria.poo.DMLProcedures;
 
-import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.DMLProcedures.Where.Tree;
 import edu.upvictoria.poo.DMLProcedures.Where.Where;
 import edu.upvictoria.poo.Database;
@@ -9,7 +8,6 @@ import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class Update {

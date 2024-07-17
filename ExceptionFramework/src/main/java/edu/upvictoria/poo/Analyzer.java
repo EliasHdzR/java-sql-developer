@@ -28,9 +28,7 @@ public class Analyzer {
             "VARCHAR","CHAR","BOOLEAN","DATE","INT","DOUBLE"
     ));
 
-    private static final ArrayList<String> operators = new ArrayList<>(List.of(
-            "AND","OR","<=",">=","=","<",">","!=","(",")"
-    ));
+    private static ArrayList<String> operators;
 
     private static final ArrayList<String> constraints = new ArrayList<>(List.of(
             "NOT NULL","PRIMARY KEY","FOREIGN KEY"
@@ -184,6 +182,17 @@ public class Analyzer {
     }
 
     public static ArrayList<String> getOperators() {
+        operators = new ArrayList<>();
+        operators.add("AND");
+        operators.add("OR");
+        operators.add("<=");
+        operators.add(">=");
+        operators.add("=");
+        operators.add("<");
+        operators.add(">");
+        operators.add("!=");
+        operators.add("(");
+        operators.add(")");
         return operators;
     }
 
