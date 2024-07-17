@@ -33,7 +33,7 @@ public class CreateTable {
 
         try {
             tableName = cleanedLine.substring(0, cleanedLine.indexOf("(")).trim();
-            cleanedLine = cleanedLine.substring(cleanedLine.indexOf("(") - 1).trim();
+            cleanedLine = cleanedLine.substring(cleanedLine.indexOf("(")).trim();
         } catch (StringIndexOutOfBoundsException e) {
             throw new SQLSyntaxException("MALFORMED STATEMENT: TABLE NAME NOT FOUND");
         }
@@ -68,71 +68,6 @@ public class CreateTable {
         database.addTable(newTable);
     }
 
-    /*private ArrayList<Column> splitValues(String line) throws DataTypeNotFoundException, StringIndexOutOfBoundsException {
-        ArrayList<String> dataTypes = Analyzer.getDataTypes();
-        ArrayList<String> constraints = Analyzer.getConstraints();
-
-        ArrayList<Column> columns = new ArrayList<>();
-        String tableName, cName, cDataType = null, cConstraint = null;
-        boolean foundDataType;
-        boolean foundConstraint;
-
-        tableName = line.substring(0, line.indexOf("(")).trim();
-        Column KKColumn = new Column(tableName,null,null);
-        columns.add(KKColumn);
-
-        line = line.substring(tableName.length()).trim();
-        if(!(line.startsWith("(") && line.endsWith(")"))){
-            throw new StringIndexOutOfBoundsException();
-        }
-        line = line.substring(line.indexOf("(")+1,line.indexOf(")")).trim();
-        line = line.replaceAll(", ", ",");
-
-        String[] values = line.split(",");
-
-        for(String value : values){
-            foundDataType = false;
-            String[] parts = value.split(" ");
-            cName = parts[0].trim();
-
-            //BUSCAMOS EL TIPO DE DATO AQUI
-            for(String dataType : dataTypes){
-                if(value.contains(dataType)){
-                    foundDataType = true;
-                    cDataType = dataType;
-                    break;
-                }
-            }
-
-            if(!foundDataType){
-                throw new DataTypeNotFoundException("DATA TYPE NOT FOUND IN LINE " + value);
-            }
-
-            //BUSCAMOS SI TIENE CONSTRAINT DEFINIDA AQUI
-            if(parts.length > 2){
-                foundConstraint = false;
-
-                for(String constraint : constraints){
-                    if(value.contains(constraint)){
-                        foundConstraint = true;
-                        cConstraint = constraint;
-                        break;
-                    }
-                }
-
-                if(!foundConstraint){
-                    throw new DataTypeNotFoundException("CONSTRAINT NOT FOUND IN LINE " + value);
-                }
-            }
-
-            Column column = new Column(cName.trim(),cDataType.trim(),cConstraint);
-            columns.add(column);
-            cConstraint = "\0";
-        }
-
-        return columns;
-    }*/
-
     private ArrayList<Column> splitValues(String line) throws SQLSyntaxException, DataTypeNotFoundException {
         ArrayList<Column> columns = new ArrayList<>();
 
@@ -145,7 +80,7 @@ public class CreateTable {
         // sintaxis de la definicion de una columna: nombre tipo_de_dato(tamaño) [constraint]
         String[] columnsRawDefinitions = line.split(",");
         for(String columnRawDefinition : columnsRawDefinitions){
-            String[] columnTokens = columnRawDefinition.split(" ");
+            String[] columnTokens = columnRawDefinition.trim().split(" ");
             String constraint = "";
             ArrayList<String> arrColumnTokens = new ArrayList<>(Arrays.asList(columnTokens));
 
@@ -185,7 +120,7 @@ public class CreateTable {
                 throw new DataTypeNotFoundException("UNDEFINED COLUMN TYPE " + columnTokens[1]);
             }
 
-            columns.add(new Column(arrColumnTokens.get(0),arrColumnTokens.get(1), constraint));
+            columns.add(new Column(arrColumnTokens.get(0).trim(),arrColumnTokens.get(1).trim(), constraint.trim()));
         }
 
         return columns;
