@@ -31,7 +31,7 @@ public class Analyzer {
     private static ArrayList<String> operators;
 
     private static final ArrayList<String> constraints = new ArrayList<>(List.of(
-            "NOT NULL","PRIMARY KEY","FOREIGN KEY"
+            "NOT NULL","PRIMARY KEY","FOREIGN KEY","NULL"
     ));
 
     private Database database = new Database();

@@ -44,13 +44,7 @@ public class Table {
 
                 if(columnsId){
                     for (String rowValue : rowValues) {
-                        String[] columnData = rowValue.trim().split(" ");
-                        String constraint = null;
-
-                        if (columnData.length > 2) {
-                            constraint = columnData[2] + " " + columnData[3];
-                        }
-                        Column column = new Column(columnData[0], columnData[1], constraint);
+                        Column column = getColumn(rowValue);
                         columns.add(column);
                     }
 
@@ -65,6 +59,20 @@ public class Table {
         } catch (RuntimeException e){
             throw new FileSystemException("TABLE FORMAT ERROR");
         }
+    }
+
+    private static Column getColumn(String rowValue) {
+        String[] columnData = rowValue.trim().split(" ");
+        String constraint = null;
+
+        if (columnData.length > 2) {
+            constraint = "";
+            for(int i = 2; i < columnData.length; i++){
+                constraint += columnData[i] + " ";
+            }
+            constraint = constraint.trim();
+        }
+        return new Column(columnData[0], columnData[1], constraint);
     }
 
     /**
