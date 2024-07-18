@@ -53,9 +53,11 @@ public class Analyzer {
     public void analyzeSyntax(String line) throws Exception {
         line = line.replaceAll("\n"," ");
         ArrayList<String> validKeywords = new ArrayList<>();
+        boolean appears = false;
 
         for(String keyword : keywords){
             if (line.startsWith(keyword)) {
+                appears = true;
                 try {
                     // lets get funky
                     switch (keyword) {
@@ -100,6 +102,7 @@ public class Analyzer {
                             return;
 
                         case "INSERT INTO":
+                            appears = true;
                             if (database.getDbFile() == null) {
                                 throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
                             }
@@ -166,6 +169,10 @@ public class Analyzer {
                     throw new NoSuchFileException("NOT A DATABASE: " + e.getMessage());
                 }
             }
+        }
+
+        if(!appears){
+            throw new SQLSyntaxException("UNRECOGNIZED STATEMENTS");
         }
     }
 
