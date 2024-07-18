@@ -20,7 +20,7 @@ public class Reader {
                     continue;
                 }
 
-                if(input.startsWith("USE")){
+                if(input.toUpperCase().startsWith("USE")){
                     inputLines.append(input.trim());
                 } else {
                     inputLines.append(input.toUpperCase().trim());
