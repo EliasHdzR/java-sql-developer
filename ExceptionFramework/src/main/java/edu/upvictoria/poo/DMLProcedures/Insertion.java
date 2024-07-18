@@ -1,14 +1,12 @@
 package edu.upvictoria.poo.DMLProcedures;
 
-import edu.upvictoria.poo.Column;
-import edu.upvictoria.poo.Database;
-import edu.upvictoria.poo.Table;
-import edu.upvictoria.poo.Utils;
+import edu.upvictoria.poo.*;
 
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
+import jdk.jshell.execution.Util;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -49,7 +47,7 @@ public class Insertion {
         insertionData = splitInsertionValues(cleanedLine_v3);
 
         if(insertionColumns.size()-1 != insertionData.size()){
-            throw new InsuficientDataProvidedException("INSUFICIENT DATA PROVIDED");
+            throw new InsuficientDataProvidedException("DATA PROVIDED MISMATCH");
         }
 
         ArrayList<Table> tables = database.getTables();
@@ -117,24 +115,12 @@ public class Insertion {
         String[] values = query.split(",");
 
         for(int i = 0; i < values.length; i++){
-            if(values[i].startsWith("'") && values[i].endsWith("'")){
                 values[i] = values[i].replace("'", "");
-            }
-
-            // por si las comillas simples no matchean
-            if((!values[i].startsWith("'") && values[i].endsWith("'"))
-                    || (values[i].startsWith("'") && !values[i].endsWith("'"))){
-                throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
-            }
-
-            values[i] = values[i].trim();
+                values[i] = values[i].trim();
         }
 
         return new ArrayList<>(Arrays.asList(values));
     }
 }
 
-
-// TODO: COMPROBAR QUE SE INGRESA UN TIPO DE DATO CORRECTO AL CREAR UN REGISTRO
-// TODO: COMPROBAR QUE NO SE ELIGEN DOS COLUMNAS IGUALES A LAS QUE INGRESAR UN REGISTRO
-// TODO: EN INSERCION DE DATOS DELIMITAR LOS STRINGS CON COMILLAS SIMPLES
+// todo: mejorar esta funcion completamente

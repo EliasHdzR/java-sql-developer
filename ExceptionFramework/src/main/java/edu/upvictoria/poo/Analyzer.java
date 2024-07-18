@@ -21,7 +21,7 @@ public class Analyzer {
     private static final ArrayList<String> keywords = new ArrayList<>(List.of(
             "USE", "SHOW TABLES", "CREATE TABLE", "DROP TABLE",
             "INSERT INTO", "DELETE FROM", "UPDATE", "SELECT",
-            "FROM", "WHERE", "SET"
+            "FROM", "WHERE", "SET","VALUES"
     ));
 
     private static final ArrayList<String> dataTypes = new ArrayList<>(List.of(

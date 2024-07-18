@@ -21,7 +21,15 @@ public class Reader {
                 }
 
                 if(input.toUpperCase().startsWith("USE")){
-                    inputLines.append(input.trim());
+                    String[] tokens = input.split(" ");
+                    tokens[0] = tokens[0].toUpperCase();
+                    StringBuilder builder = new StringBuilder();
+
+                    for (String token : tokens) {
+                        builder.append(token).append(" ");
+                    }
+
+                    inputLines.append(builder.toString().trim());
                 } else {
                     inputLines.append(input.toUpperCase().trim());
                 }
