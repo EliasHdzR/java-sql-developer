@@ -142,7 +142,7 @@ public class Table {
         ArrayList<Object> newData = new ArrayList<>();
 
         for(int i = 0; i < this.columns.size(); i++){
-            newData.add("\0");
+            newData.add("");
         }
 
         int j = 0;

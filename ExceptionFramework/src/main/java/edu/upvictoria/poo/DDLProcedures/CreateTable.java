@@ -60,7 +60,10 @@ public class CreateTable {
 
         ArrayList<String> rowData = new ArrayList<>();
         for(Column column : newTable.getColumns()){
-            String data = column.getName() +" "+ column.getType() +" "+ column.getConstraint();
+            String data = column.getName() +" "+ column.getType();
+            if(!column.getConstraint().isEmpty()){
+                data += " " + column.getConstraint();
+            }
             rowData.add(data);
         }
 
