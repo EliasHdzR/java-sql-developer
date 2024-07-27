@@ -1,8 +1,10 @@
 package edu.upvictoria.poo.DMLProcedures.Where;
 
 import edu.upvictoria.poo.Analyzer;
+import edu.upvictoria.poo.Column;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
+
 import java.util.ArrayList;
 import java.util.Stack;
 
@@ -10,7 +12,7 @@ public class Where {
 
     public static int getHierarchy(String keyword){
         switch(keyword){
-            case "*": case "/": case "DIV": case "%":
+            case "*": case "/": case "DIV": case "%": case "MOD":
                 return 5;
             case "+": case "-":
                 return 4;
@@ -43,7 +45,7 @@ public class Where {
                     stack.pop();
                     break;
                 case "AND": case "OR": case "=": case ">": case ">=": case "<": case "<=": case "!=":
-                case "+": case "-": case "*": case "/": case "%": case "DIV":
+                case "+": case "-": case "*": case "/": case "%": case "DIV": case "MOD":
                     while (!stack.isEmpty() && getHierarchy(stack.peek()) >= getHierarchy(token)) {
                         postfix.add(stack.pop());
                     }
@@ -63,7 +65,8 @@ public class Where {
     }
 
     public static Tree.Node createTree(ArrayList<String> tokens) {
-        ArrayList<String> operators = Analyzer.getOperators();
+        ArrayList<String> operators = new ArrayList<>(Analyzer.getComparators());
+        operators.addAll(Analyzer.getOperators());
         Stack<Tree.Node> stack = new Stack<>();
 
         for (String token : tokens) {
@@ -82,121 +85,243 @@ public class Where {
         return stack.pop();
     }
 
-    public static ArrayList<ArrayList<Object>> evaluateTree(Tree.Node root, ArrayList<ArrayList<Object>> data, Table table) throws SQLSyntaxException {
+    public static ArrayList<ArrayList<Object>> evaluateTree(Tree.Node root, ArrayList<ArrayList<Object>> data, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+        if(!Analyzer.getComparators().contains(root.value)){
+            throw new SQLSyntaxException("MALFORMED WHERE STATEMENT");
+        }
+
         ArrayList<ArrayList<Object>> results = new ArrayList<>();
+
+        Tree.Node auxRoot = new Tree.Node(root);
 
         for(ArrayList<Object> row : data) {
             if(evaluateRowInTree(root, row, table)){
                 results.add(row);
             }
+            root = new Tree.Node(auxRoot);
         }
 
         return results;
     }
 
-    public static boolean evaluateRowInTree(Tree.Node root, ArrayList<Object> row, Table table) throws SQLSyntaxException{
+    private static boolean evaluateRowInTree(Tree.Node root, ArrayList<Object> row, Table table) throws UnsupportedOperationException, SQLSyntaxException {
         if(root == null) return true;
 
-        ArrayList<String> operators = Analyzer.getOperators();
+        if(Analyzer.getOperators().contains(root.left.value)){
+            root.left.value = evaluateSubTree(root.left, row, table);
+        }
 
-        if(operators.contains(root.value)){
-            boolean left = evaluateRowInTree(root.left, row, table);
-            boolean right = evaluateRowInTree(root.right, row, table);
+        if(Analyzer.getOperators().contains(root.right.value)){
+            root.right.value = evaluateSubTree(root.right, row, table);
+        }
 
-            switch(root.value){
-                case "AND":
-                    return left && right;
-                case "OR":
-                    return left || right;
-                default:
-                    throw new UnsupportedOperationException();
-            }
-        } else {
-            return evaluateCondition(root.value,row, table);
+        if(!Analyzer.getComparators().contains(root.left.value) && !Analyzer.getComparators().contains(root.right.value)
+            && !Analyzer.getOperators().contains(root.left.value) && !Analyzer.getOperators().contains(root.right.value)){
+            return evaluateCondition(root.value, root.left.value, root.right.value, row, table);
+        }
+
+        boolean left = evaluateRowInTree(root.left, row, table);
+        boolean right = evaluateRowInTree(root.right, row, table);
+
+        switch(root.value){
+            case "AND":
+                return left && right;
+            case "OR":
+                return left || right;
+            default:
+                throw new UnsupportedOperationException("UNSUPPORTED OPERATION");
         }
     }
 
-    public static boolean evaluateCondition(String condition, ArrayList<Object> row, Table table) throws SQLSyntaxException {
-        Object[] conditionValues = condition.split(" ");
-
-        if(conditionValues.length > 3){
-            for(int i = 3; i < conditionValues.length; i++){
-                conditionValues[2] +=  " " + conditionValues[i];
-            }
+    private static boolean evaluateCondition(String comparator, String left, String right, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+        Column leftCol = null, rightCol = null;
+        if(!left.startsWith("'") && !left.endsWith("'")){
+            leftCol = table.getColumnByName(left);
         }
 
-        int columnPos = table.getColumnPos((String)conditionValues[0]);
-        String columnType = table.getColumns().get(columnPos).getType();
-
-        String rowValue = row.get(columnPos).toString();
-        if(rowValue == null || rowValue.isEmpty() || rowValue.isBlank() || rowValue.equals("\0")) return false;
-
-        String operator = (String) conditionValues[1];
-        Double rowDoubleValue = null, columnDoubleValue = null;
-        Integer rowIntegerValue = null, columnIntegerValue = null;
-
-        try {
-            if(columnType.equals("INT")){
-                rowIntegerValue = Integer.parseInt(rowValue);
-                columnIntegerValue = Integer.parseInt(conditionValues[2].toString());
-            }
-
-            if(columnType.equals("DOUBLE") || columnType.equals("FLOAT")){
-                rowDoubleValue = Double.parseDouble(rowValue);
-                columnDoubleValue = Double.parseDouble(conditionValues[2].toString());
-            }
-        } catch (NumberFormatException e) {
-            throw new SQLSyntaxException("INCORRECT DATA TYPE GIVEN");
+        if(!right.startsWith("'") && !right.endsWith("'")){
+            rightCol = table.getColumnByName(right);
         }
 
-        switch(operator){
+        String leftValue = getString(left, row, table, leftCol);
+        String rightValue = getString(right, row, table, rightCol);
+
+        if (leftValue.equals("NULL") || rightValue.equals("NULL")) {
+            return evaluateNullCondition(comparator, leftValue, rightValue);
+        }
+
+        double leftDouble, rightDouble;
+
+        switch(comparator){
             case "=":
-                return rowValue.equals(conditionValues[2]);
-
+                return leftValue.equals(rightValue);
             case "<":
-                if(rowDoubleValue != null){
-                    return rowDoubleValue < columnDoubleValue;
+                try {
+                    leftDouble = Double.parseDouble(leftValue);
+                    rightDouble = Double.parseDouble(rightValue);
+                    return leftDouble < rightDouble;
+                } catch (NumberFormatException e) {
+                    throw new SQLSyntaxException("UNDEFINED VALUE");
                 }
-
-                if(rowIntegerValue != null){
-                   return rowIntegerValue < columnIntegerValue;
-                }
-                throw new UnsupportedOperationException();
 
             case ">":
-                if(rowDoubleValue != null){
-                    return rowDoubleValue > columnDoubleValue;
+                try {
+                    leftDouble = Double.parseDouble(leftValue);
+                    rightDouble = Double.parseDouble(rightValue);
+                    return leftDouble > rightDouble;
+                } catch (NumberFormatException e) {
+                    throw new SQLSyntaxException("UNDEFINED VALUE");
                 }
-
-                if(rowIntegerValue != null){
-                    return rowIntegerValue > columnIntegerValue;
-                }
-                throw new UnsupportedOperationException();
 
             case "<=":
-                if(rowDoubleValue != null){
-                    return rowDoubleValue <= columnDoubleValue;
+                try {
+                    leftDouble = Double.parseDouble(leftValue);
+                    rightDouble = Double.parseDouble(rightValue);
+                    return leftDouble <= rightDouble;
+                } catch (NumberFormatException e) {
+                    throw new SQLSyntaxException("UNDEFINED VALUE");
                 }
-
-                if(rowIntegerValue != null){
-                    return rowIntegerValue <= columnIntegerValue;
-                }
-                throw new UnsupportedOperationException();
 
             case ">=":
-                if(rowDoubleValue != null){
-                    return rowDoubleValue >= columnDoubleValue;
+                try {
+                    leftDouble = Double.parseDouble(leftValue);
+                    rightDouble = Double.parseDouble(rightValue);
+                    return leftDouble >= rightDouble;
+                } catch (NumberFormatException e) {
+                    throw new SQLSyntaxException("UNDEFINED VALUE");
                 }
-
-                if(rowIntegerValue != null){
-                    return rowIntegerValue >= columnIntegerValue;
-                }
-                throw new UnsupportedOperationException();
 
             case "!=":
-                return !rowValue.equals(conditionValues[2]);
+                return !leftValue.equals(rightValue);
             default:
                 throw new UnsupportedOperationException();
         }
+    }
+
+    private static String getString(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
+        if(nodeValue.startsWith("'") && nodeValue.endsWith("'")){
+            return nodeValue.substring(1, nodeValue.length() - 1);
+        }
+
+        // jajaj no se entiede que chingados ando haciendo
+        try {
+            double valueDouble = Double.parseDouble(nodeValue);
+            return Double.toString(valueDouble);
+        } catch (NumberFormatException e) {
+            try {
+                if(col != null){
+                    String value = row.get(table.getColumnPos(col.getName())).toString();
+                    double valueDouble = Double.parseDouble(value);
+                    return Double.toString(valueDouble);
+                } else {
+                    if(nodeValue.equals("NULL")){
+                        return nodeValue;
+                    }
+                    throw new SQLSyntaxException("UNDEFINED COLUMN: " + nodeValue);
+                }
+            } catch (IndexOutOfBoundsException e1){
+                return "NULL";
+            } catch (NumberFormatException e2){
+                String value = row.get(table.getColumnPos(col.getName())).toString();
+                if(value.isEmpty()){
+                    return "NULL";
+                }
+                return value;
+            }
+
+        }
+    }
+
+    private static boolean evaluateNullCondition(String comparator, String left, String right){
+        switch (comparator){
+            case "=":
+                return left.equals(right);
+            case "!=":
+                return !left.equals(right);
+            default:
+                return false;
+        }
+    }
+
+    private static String evaluateSubTree(Tree.Node root, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+        if (root == null) {
+            return "NULL";
+        }
+
+        if(root.left == null || root.right == null){
+            return root.value;
+        }
+
+        Number aux = null;
+        root.left.value = evaluateSubTree(root.left, row, table);
+        root.right.value = evaluateSubTree(root.right, row, table);
+
+        if(!Analyzer.getOperators().contains(root.left.value) && !Analyzer.getOperators().contains(root.right.value)){
+            aux = evaluateOperation(root.value, root.left.value, root.right.value, row, table);
+        }
+
+        if(aux != null){
+            return aux.toString();
+        } else {
+            return "NULL";
+        }
+    }
+
+    private static Number evaluateOperation(String operator, String left, String right, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+        Column leftCol = table.getColumnByName(left);
+        Column rightCol = table.getColumnByName(right);
+        Double leftValue = getValue(left, row, table, leftCol);
+        Double rightValue = getValue(right, row, table, rightCol);
+        double value;
+
+        if(leftValue == null || rightValue == null){
+            return null;
+        }
+
+        switch (operator){
+            case "DIV":
+                if(rightValue == 0){
+                    throw new ArithmeticException("DIVISION BY ZERO");
+                }
+                value = leftValue / rightValue;
+                return (int) value;
+            case "/":
+                if(rightValue == 0){
+                    throw new ArithmeticException("DIVISION BY ZERO");
+                }
+                return leftValue / rightValue;
+            case "-":
+                return leftValue - rightValue;
+            case "+":
+                return leftValue + rightValue;
+            case "*":
+                return leftValue * rightValue;
+            case "%": case "MOD":
+                return leftValue % rightValue;
+            default:
+                throw new UnsupportedOperationException("OPERATION NOT SUPPORTED");
+        }
+    }
+
+    private static Double getValue(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
+        try {
+            return Double.parseDouble(nodeValue);
+        } catch (NumberFormatException e){
+            try {
+                if(col != null){
+                    String aux = row.get(table.getColumnPos(col.getName())).toString();
+
+                    if(aux.isEmpty()){
+                        return null;
+                    }
+
+                    return Double.parseDouble(aux);
+                }
+            } catch (IndexOutOfBoundsException e1){
+                return null;
+            }
+        }
+
+        throw new SQLSyntaxException("UNRECOGNIZED VALUES IN WHERE STATEMENT: " + nodeValue);
     }
 }

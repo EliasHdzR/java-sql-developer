@@ -28,7 +28,13 @@ public class Analyzer {
             "VARCHAR","CHAR","BOOLEAN","DATE","INT","DOUBLE"
     ));
 
-    private static ArrayList<String> operators;
+    private static final ArrayList<String> comparators = new ArrayList<>(List.of(
+            "AND","OR","<=",">=","=","<",">","!=","(",")"
+    ));
+
+    private static final ArrayList<String> operators = new ArrayList<>(List.of(
+            "DIV","/","-","+","*","%","MOD"
+    ));
 
     private static final ArrayList<String> constraints = new ArrayList<>(List.of(
             "NOT NULL","PRIMARY KEY","FOREIGN KEY","NULL"
@@ -70,7 +76,7 @@ public class Analyzer {
 
                         case "SHOW TABLES":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -79,7 +85,7 @@ public class Analyzer {
 
                         case "CREATE TABLE":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -91,7 +97,7 @@ public class Analyzer {
 
                         case "DROP TABLE":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -102,9 +108,8 @@ public class Analyzer {
                             return;
 
                         case "INSERT INTO":
-                            appears = true;
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -116,7 +121,7 @@ public class Analyzer {
 
                         case "DELETE FROM":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -128,7 +133,7 @@ public class Analyzer {
 
                         case "UPDATE":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             refreshDB(this.database.getDbFile());
@@ -140,7 +145,7 @@ public class Analyzer {
 
                         case "SELECT":
                             if (database.getDbFile() == null) {
-                                throw new DatabaseNotSetException("USE COMMAND NOT EXECUTED");
+                                throw new DatabaseNotSetException("DATABASE NOT SPECIFIED");
                             }
 
                             validKeywords.add("SELECT");
@@ -188,18 +193,11 @@ public class Analyzer {
         return constraints;
     }
 
+    public static ArrayList<String> getComparators() {
+        return comparators;
+    }
+
     public static ArrayList<String> getOperators() {
-        operators = new ArrayList<>();
-        operators.add("AND");
-        operators.add("OR");
-        operators.add("<=");
-        operators.add(">=");
-        operators.add("=");
-        operators.add("<");
-        operators.add(">");
-        operators.add("!=");
-        operators.add("(");
-        operators.add(")");
         return operators;
     }
 

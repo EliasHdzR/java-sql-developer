@@ -104,7 +104,7 @@ public class CreateTable {
                 }
 
                 constraint = constraint.trim();
-                ArrayList<String> verification = Utils.splitByWords(constraint, Analyzer.getConstraints());
+                ArrayList<String> verification = Utils.splitByWords(constraint, Analyzer.getConstraints(), false);
                 if(!verification.isEmpty()){
                     throw new SQLSyntaxException("UNDEFINED CONSTRAINT: " + constraint);
                 }

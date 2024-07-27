@@ -38,7 +38,7 @@ public class Update {
         Utils.hasValidKeywords(query, validKeywords);
 
         String cleanedLine = Utils.clean(query);
-        ArrayList<String> tokensWithoutKeywords = Utils.splitByWords(cleanedLine, validKeywords);
+        ArrayList<String> tokensWithoutKeywords = Utils.splitByWords(cleanedLine, validKeywords, false);
         ArrayList<String> setTokens, whereTokens;
         ArrayList<Integer> columnsToModify = new ArrayList<>();
         ArrayList<ArrayList <Object>> dataToModify, dataToModifyCopy;

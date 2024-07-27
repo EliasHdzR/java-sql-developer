@@ -42,65 +42,25 @@ public class Utils {
      */
     public static ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
         line = line.replaceAll("<>","!=");
-        line = line.replaceAll("^=","!=");
+        line = line.replaceAll("\\^=","!=");
+
+        // si no agrego espacios se van a romper palabras como 'CORREO'
+        ArrayList<String> keywords = new ArrayList<>(Analyzer.getComparators());
+        keywords.addAll(Analyzer.getOperators());
+        keywords.set(1," AND ");
+        keywords.set(2," OR ");
 
 
-        ArrayList<String> operatorKeywords = Analyzer.getOperators();
-        operatorKeywords.set(0, " AND ");
-        operatorKeywords.set(1, " OR ");
+        ArrayList<String> tokens = splitByWords(line, keywords, true);
 
-        ArrayList<String> tokensWithoutOperators = splitByWords(line, operatorKeywords);
-        ArrayList<String> operatorTokens = splitByWords(line, tokensWithoutOperators);
-        ArrayList<String> temp = new ArrayList<>();
-
-        for(String operator : operatorTokens){
-            String[] aux = operator.split(" ");
-            for(String token : aux){
-                if(Analyzer.getOperators().contains(token)){
-                    temp.add(token);
-                }
-            }
-        }
-
-        operatorTokens = temp;
-        //System.out.println(tokensWithoutOperators);
-        //System.out.println(operatorTokens);
-
-        // validar que el select tenga duplas [columna] [valor]
-        if(tokensWithoutOperators.size()%2 != 0){
-            throw new SQLSyntaxException("WHERE CLAUSE MALFORMED");
-        }
-
-        for(int i = 0; i < tokensWithoutOperators.size(); i+=2){
-            String token = tokensWithoutOperators.get(i);
-            if(!table.getColumnsName().contains(token)){
-                throw new SQLSyntaxException("UNDEFINED COLUMN: " + token);
-            }
-        }
-
-        for(int i = 0;  i < tokensWithoutOperators.size(); i++){
-            String token = tokensWithoutOperators.get(i);
-            if(token.startsWith("'") && token.endsWith("'")){
-                token = token.substring(1, token.length()-1);
-                tokensWithoutOperators.set(i, token);
-            }
-
-            if((!token.startsWith("'") && token.endsWith("'"))
-                    || token.startsWith("'") && token.endsWith("'")){
+        for (String token : tokens) {
+            if ((!token.startsWith("'") && token.endsWith("'"))
+                    || (token.startsWith("'") && !token.endsWith("'"))) {
                 throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
             }
         }
 
-        int j = 0;
-        for(int i = 0; i < operatorTokens.size(); i++){
-            String operator = operatorTokens.get(i);
-            if(Analyzer.getOperators().contains(operator) && !operator.equals("AND") && !operator.equals("OR")
-                && !operator.equals("(") && !operator.equals(")")){
-                operatorTokens.set(i, tokensWithoutOperators.get(j)+ " " + operator + " " + tokensWithoutOperators.get(j+1));
-                j+=2;
-            }
-        }
-        return operatorTokens;
+        return tokens;
     }
 
     /**
@@ -138,8 +98,8 @@ public class Utils {
     private static LinkedHashSet<String> getQueryKeywords(String query, ArrayList<String> validKeywords, ArrayList<String> keywords) throws SQLSyntaxException {
         LinkedHashSet<String> foundKeywords = new LinkedHashSet<>();
 
-        ArrayList<String> tokensWithoutKeywords = splitByWords(query, keywords);
-        ArrayList<String> tokenKeywords = splitByWords(query, tokensWithoutKeywords);
+        ArrayList<String> tokensWithoutKeywords = splitByWords(query, keywords, false);
+        ArrayList<String> tokenKeywords = splitByWords(query, tokensWithoutKeywords, false);
 
         for(String token : tokenKeywords){
             if(keywords.contains(token)){
@@ -163,7 +123,7 @@ public class Utils {
      * @return Un ArrayList<String> con las palabras divididas sin contener a los divisores
      * @throws SQLSyntaxException
      */
-    public static ArrayList<String> splitByWords(String line, ArrayList<String> words) {
+    public static ArrayList<String> splitByWords(String line, ArrayList<String> words, Boolean includeSplittingWords) {
         ArrayList<String> tokens = new ArrayList<>();
         String token;
 
@@ -187,6 +147,12 @@ public class Utils {
                     tokens.add(token);
                 }
             }
+
+            // agregar la palabra divisora al array de tokens si includeSplittingWords es verdadero
+            if (includeSplittingWords) {
+                tokens.add(matcher.group().trim());
+            }
+
             lastEnd = matcher.end();
         }
 
