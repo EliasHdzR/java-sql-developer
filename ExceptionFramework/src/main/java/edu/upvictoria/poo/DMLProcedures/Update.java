@@ -48,7 +48,7 @@ public class Update {
         setTokens = parseSetClausule(setClausule);
 
         if(validKeywords.contains("WHERE")){
-            whereTokens = Utils.getWhereTokens(tokensWithoutKeywords.get(2), table);
+            whereTokens = Utils.getWhereTokens(tokensWithoutKeywords.get(2));
             whereTokens = Where.infixToPostfix(whereTokens);
             Tree.Node root = Where.createTree(whereTokens);
             dataToModify = Where.evaluateTree(root, table.getData(), table);

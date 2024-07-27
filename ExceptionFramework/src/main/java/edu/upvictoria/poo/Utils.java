@@ -35,12 +35,11 @@ public class Utils {
     /**
      *
      * @param line
-     * @param table
      * @return Separa las condiciones encontradas en la sentencia WHERE y las agrega a un array de strings
      * @throws SQLSyntaxException
      * @throws IndexOutOfBoundsException
      */
-    public static ArrayList<String> getWhereTokens(String line, Table table) throws SQLSyntaxException, IndexOutOfBoundsException {
+    public static ArrayList<String> getWhereTokens(String line) throws SQLSyntaxException, IndexOutOfBoundsException {
         line = line.replaceAll("<>","!=");
         line = line.replaceAll("\\^=","!=");
 
@@ -49,7 +48,6 @@ public class Utils {
         keywords.addAll(Analyzer.getOperators());
         keywords.set(1," AND ");
         keywords.set(2," OR ");
-
 
         ArrayList<String> tokens = splitByWords(line, keywords, true);
 

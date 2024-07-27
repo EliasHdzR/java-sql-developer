@@ -43,7 +43,7 @@ public class Deletion {
                 tableExists = true;
 
                 if(whereLine != null){
-                    whereTokens = Utils.getWhereTokens(whereLine,table);
+                    whereTokens = Utils.getWhereTokens(whereLine);
                     whereTokens = Where.infixToPostfix(whereTokens);
                     Tree.Node root = Where.createTree(whereTokens);
                     wheredData = Where.evaluateTree(root, table.getData(), table);

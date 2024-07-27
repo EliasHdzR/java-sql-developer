@@ -60,7 +60,7 @@ public class Selection {
         // Si existe una clasula WHERE
         if(whereLine != null){
             // Evaluamos los datos y obtenemos aquellos que cumplan las condiciones escritras
-            whereTokens = Utils.getWhereTokens(whereLine,table);
+            whereTokens = Utils.getWhereTokens(whereLine);
             whereTokens = Where.infixToPostfix(whereTokens);
             Tree.Node root = Where.createTree(whereTokens);
             wheredData = Where.evaluateTree(root, table.getData(), table);
