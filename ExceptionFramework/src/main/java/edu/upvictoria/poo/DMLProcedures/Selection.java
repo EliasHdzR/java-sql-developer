@@ -81,10 +81,11 @@ public class Selection {
     private ArrayList<Column> getSelectedColumns(Table table, String rawColumns) throws SQLSyntaxException{
         ArrayList<Column> columns = new ArrayList<>();
         String[] values = rawColumns.split(",");
-        String alias = null;
+        String alias;
         Column column;
 
         for(int i = 0; i < values.length; i++){
+            alias = null;
             values[i] = values[i].trim();
 
             if(values[i].contains(" AS ")){
@@ -103,7 +104,7 @@ public class Selection {
             }
 
             if(column == null){
-                throw new SQLSyntaxException("COLUMN DOES NOT EXISTS");
+                throw new SQLSyntaxException("COLUMN " + values[i] + " DOES NOT EXISTS");
             } else {
                 column.setAlias(alias);
                 columns.add(column);

@@ -233,34 +233,40 @@ public class Table {
     }
 
     public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) {
-        for(Column column : columns){
-            if(column.getAlias() == null){
+        ArrayList<ArrayList<Object>> dataToPrint = new ArrayList<>();
+
+        for (Column column : columns) {
+            if (column.getAlias() == null) {
                 System.out.print("| " + column.getName() + "\t");
             } else {
                 System.out.print("| " + column.getAlias() + "\t");
             }
         }
         System.out.println("|");
+
         for (int i = 0; i < columns.size(); i++) {
             System.out.print("+------------");
         }
         System.out.println("+");
 
-        // imprimirmos datos
-        for (ArrayList<Object> datum : data) {
-            int j = 0;
-            for (int i = 0; i < datum.size(); i++) {
-                if(this.columns.get(i).getName().equals(columns.get(j).getName())){
-                    Object object = datum.get(i);
-                    System.out.print("| " + object.toString() + "\t");
-                    j++;
-
-                    if(j == columns.size()){
-                        break;
-                    }
+        for (ArrayList<Object> row : data) {
+            ArrayList<Object> rowToPrint = new ArrayList<>();
+            for (Column column : columns) {
+                String columnName = column.getName();
+                int pos = getColumnPos(columnName);
+                if (pos < row.size()) {
+                    rowToPrint.add(row.get(pos));
+                } else {
+                    rowToPrint.add("");
                 }
             }
+            dataToPrint.add(rowToPrint);
+        }
 
+        for (ArrayList<Object> row : dataToPrint) {
+            for (Object value : row) {
+                System.out.print("| " + value.toString() + "\t");
+            }
             System.out.println("|");
             for (int i = 0; i < columns.size(); i++) {
                 System.out.print("+------------");
