@@ -234,7 +234,11 @@ public class Table {
 
     public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) {
         for(Column column : columns){
-            System.out.print("| " + column.getName() + "\t");
+            if(column.getAlias() == null){
+                System.out.print("| " + column.getName() + "\t");
+            } else {
+                System.out.print("| " + column.getAlias() + "\t");
+            }
         }
         System.out.println("|");
         for (int i = 0; i < columns.size(); i++) {

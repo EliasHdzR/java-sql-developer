@@ -4,6 +4,7 @@ public class Column {
     private final String name;
     private final String type;
     private final String constraint;
+    private String alias = null;
 
     public Column(String name, String type, String constraint) {
         this.name = name;
@@ -24,5 +25,13 @@ public class Column {
             return "";
         }
         return constraint;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
+    public String getAlias() {
+        return alias;
     }
 }

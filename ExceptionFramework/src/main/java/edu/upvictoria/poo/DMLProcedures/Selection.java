@@ -50,13 +50,6 @@ public class Selection {
         // Obtener tabla
         Table table = database.getTableByName(selectedTable);
 
-        // Si selecciona columnas específicas
-        if(!rawColumns.equals("*")){
-            columns = getSelectedColumns(table, rawColumns);
-        } else {
-            columns = table.getColumns();
-        }
-
         // Si existe una clasula WHERE
         if(whereLine != null){
             // Evaluamos los datos y obtenemos aquellos que cumplan las condiciones escritras
@@ -67,6 +60,13 @@ public class Selection {
         } else {
             // Agarramos todos los datos
             wheredData = table.getData();
+        }
+
+        // Si selecciona columnas específicas
+        if(rawColumns.equals("*")){
+            columns = table.getColumns();
+        } else {
+            columns = getSelectedColumns(table, rawColumns);
         }
 
         table.printData(columns, wheredData);
@@ -81,14 +81,31 @@ public class Selection {
     private ArrayList<Column> getSelectedColumns(Table table, String rawColumns) throws SQLSyntaxException{
         ArrayList<Column> columns = new ArrayList<>();
         String[] values = rawColumns.split(",");
+        String alias = null;
+        Column column;
 
         for(int i = 0; i < values.length; i++){
             values[i] = values[i].trim();
 
-            Column column = table.getColumnByName(values[i]);
+            if(values[i].contains(" AS ")){
+                String[] columnInfo = values[i].split(" AS ");
+                alias = columnInfo[1].trim();
+
+                if(alias.startsWith("'") && alias.endsWith("'")){
+                    alias = alias.substring(1,alias.length()-1);
+                } else {
+                    throw new SQLSyntaxException("INVALID COLUMN ALIAS: " + alias);
+                }
+
+                column = table.getColumnByName(columnInfo[0].trim());
+            } else {
+                column = table.getColumnByName(values[i]);
+            }
+
             if(column == null){
                 throw new SQLSyntaxException("COLUMN DOES NOT EXISTS");
             } else {
+                column.setAlias(alias);
                 columns.add(column);
             }
         }
