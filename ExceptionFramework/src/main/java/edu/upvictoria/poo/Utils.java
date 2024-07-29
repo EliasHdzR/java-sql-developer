@@ -46,8 +46,8 @@ public class Utils {
         // si no agrego espacios se van a romper palabras como 'CORREO'
         ArrayList<String> keywords = new ArrayList<>(Analyzer.getComparators());
         keywords.addAll(Analyzer.getOperators());
-        keywords.set(1," AND ");
-        keywords.set(2," OR ");
+        keywords.set(0," AND ");
+        keywords.set(1," OR ");
 
         ArrayList<String> tokens = splitByWords(line, keywords, true);
 

@@ -1,10 +1,13 @@
 package edu.upvictoria.poo;
 
+import edu.upvictoria.poo.DMLProcedures.Where.Tree;
+
 public class Column {
     private final String name;
     private final String type;
     private final String constraint;
     private String alias = null;
+    private Tree.Node operation;
 
     public Column(String name, String type, String constraint) {
         this.name = name;
@@ -33,5 +36,13 @@ public class Column {
 
     public String getAlias() {
         return alias;
+    }
+
+    public void setOperation(Tree.Node operation) {
+        this.operation = operation;
+    }
+
+    public Tree.Node getOperation() {
+        return operation;
     }
 }

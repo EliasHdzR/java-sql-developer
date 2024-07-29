@@ -2,6 +2,9 @@ package edu.upvictoria.poo;
 
 // OBJECT IS THE WAY
 
+import edu.upvictoria.poo.DMLProcedures.Where.Tree;
+import edu.upvictoria.poo.DMLProcedures.Where.Where;
+import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.io.*;
@@ -232,28 +235,20 @@ public class Table {
         }
     }
 
-    public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) {
+    public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) throws SQLSyntaxException {
         ArrayList<ArrayList<Object>> dataToPrint = new ArrayList<>();
-
-        for (Column column : columns) {
-            if (column.getAlias() == null) {
-                System.out.print("| " + column.getName() + "\t");
-            } else {
-                System.out.print("| " + column.getAlias() + "\t");
-            }
-        }
-        System.out.println("|");
-
-        for (int i = 0; i < columns.size(); i++) {
-            System.out.print("+------------");
-        }
-        System.out.println("+");
 
         for (ArrayList<Object> row : data) {
             ArrayList<Object> rowToPrint = new ArrayList<>();
             for (Column column : columns) {
                 String columnName = column.getName();
                 int pos = getColumnPos(columnName);
+
+                if(pos == -1){
+                    rowToPrint.add("");
+                    continue;
+                }
+
                 if (pos < row.size()) {
                     rowToPrint.add(row.get(pos));
                 } else {
@@ -263,12 +258,40 @@ public class Table {
             dataToPrint.add(rowToPrint);
         }
 
+        for (int i = 0; i < dataToPrint.size(); i++) {
+            ArrayList<Object> rowToPrint = dataToPrint.get(i);
+            ArrayList<Object> originalRow = data.get(i);
+
+            for (int j = 0; j < rowToPrint.size(); j++) {
+                Column column = columns.get(j);
+                Tree.Node colOperation = new Tree.Node(column.getOperation());
+                if(column.getOperation() != null){
+                    rowToPrint.set(j, Where.evaluateSubTree(colOperation, originalRow, this));
+                }
+            }
+        }
+
+        // FINALMENTE IMPRESION DE LOS DATOS
+        for (Column column : columns) {
+            if (column.getAlias() == null) {
+                System.out.print("| " + column.getName() + "\t");
+            } else {
+                System.out.print("| " + column.getAlias() + "\t");
+            }
+        }
+
+        System.out.println("|");
+        for (int k = 0; k < columns.size(); k++) {
+            System.out.print("+------------");
+        }
+        System.out.println("+");
+
         for (ArrayList<Object> row : dataToPrint) {
             for (Object value : row) {
                 System.out.print("| " + value.toString() + "\t");
             }
             System.out.println("|");
-            for (int i = 0; i < columns.size(); i++) {
+            for (int k = 0; k < columns.size(); k++) {
                 System.out.print("+------------");
             }
             System.out.println("+");

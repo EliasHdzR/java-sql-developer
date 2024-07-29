@@ -1,9 +1,6 @@
 package edu.upvictoria.poo.DMLProcedures;
 
-import edu.upvictoria.poo.Database;
-import edu.upvictoria.poo.Table;
-import edu.upvictoria.poo.Column;
-import edu.upvictoria.poo.Utils;
+import edu.upvictoria.poo.*;
 
 import edu.upvictoria.poo.DMLProcedures.Where.*;
 
@@ -12,6 +9,7 @@ import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Selection {
     private String query;
@@ -81,39 +79,52 @@ public class Selection {
     private ArrayList<Column> getSelectedColumns(Table table, String rawColumns) throws SQLSyntaxException{
         ArrayList<Column> columns = new ArrayList<>();
         String[] values = rawColumns.split(",");
-        String alias;
-        Column column;
 
         for(int i = 0; i < values.length; i++){
-            alias = null;
             values[i] = values[i].trim();
-
-            if(values[i].contains(" AS ")){
-                String[] columnInfo = values[i].split(" AS ");
-                alias = columnInfo[1].trim();
-
-                if(alias.startsWith("'") && alias.endsWith("'")){
-                    alias = alias.substring(1,alias.length()-1);
-                } else {
-                    throw new SQLSyntaxException("INVALID COLUMN ALIAS: " + alias);
-                }
-
-                column = table.getColumnByName(columnInfo[0].trim());
-            } else {
-                column = table.getColumnByName(values[i]);
-            }
-
-            if(column == null){
-                throw new SQLSyntaxException("COLUMN " + values[i] + " DOES NOT EXISTS");
-            } else {
-                column.setAlias(alias);
-                columns.add(column);
-            }
+            Column column = parseColumn(values[i], table);
+            columns.add(column);
         }
 
         return columns;
     }
+
+    private Column parseColumn(String definition, Table table) throws SQLSyntaxException{
+        Column column;
+        String alias = null;
+        String temp;
+
+        if(definition.contains(" AS ")){
+            String[] columnInfo = definition.split(" AS ");
+            temp = columnInfo[0].trim();
+            column = table.getColumnByName(temp);
+            alias = columnInfo[1].trim();
+
+            if(alias.startsWith("'") && alias.endsWith("'")){
+                alias = alias.substring(1,alias.length()-1);
+            } else {
+                throw new SQLSyntaxException("INVALID COLUMN ALIAS: " + alias);
+            }
+
+            if(column != null){
+                column.setAlias(alias);
+            }
+        } else {
+            temp = definition;
+            column = table.getColumnByName(temp);
+        }
+
+        if(column != null){
+            return column;
+        }
+
+        ArrayList<String> operationTokens = Utils.getWhereTokens(temp);
+        operationTokens = Where.infixToPostfix(operationTokens);
+        Tree.Node root = Where.createTree(operationTokens);
+
+        column = new Column(temp,null,null);
+        column.setAlias(alias);
+        column.setOperation(root);
+        return column;
+    }
 }
-
-
-// todo: permitir la seleccion de columnas desordenadas e imprimirlas en ese orden

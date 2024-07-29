@@ -243,7 +243,7 @@ public class Where {
         }
     }
 
-    private static String evaluateSubTree(Tree.Node root, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+    public static String evaluateSubTree(Tree.Node root, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
         if (root == null) {
             return "NULL";
         }
@@ -319,6 +319,8 @@ public class Where {
                 }
             } catch (IndexOutOfBoundsException e1){
                 return null;
+            } catch (NumberFormatException e2){
+                throw new SQLSyntaxException("OPERATION NOT SUPPORTED FOR " + col.getType() + " DATA TYPE");
             }
         }
 

@@ -6,9 +6,7 @@ import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
-import jdk.jshell.execution.Util;
 
-import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,5 +120,3 @@ public class Insertion {
         return new ArrayList<>(Arrays.asList(values));
     }
 }
-
-// todo: mejorar esta funcion completamente
