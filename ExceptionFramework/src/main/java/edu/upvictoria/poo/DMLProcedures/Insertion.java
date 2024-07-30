@@ -2,6 +2,8 @@ package edu.upvictoria.poo.DMLProcedures;
 
 import edu.upvictoria.poo.*;
 
+import edu.upvictoria.poo.DMLProcedures.Where.Tree;
+import edu.upvictoria.poo.DMLProcedures.Where.Where;
 import edu.upvictoria.poo.exceptions.ColumnDoesNotMatch;
 import edu.upvictoria.poo.exceptions.InsuficientDataProvidedException;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
@@ -110,13 +112,26 @@ public class Insertion {
         }
 
         query = query.substring(query.indexOf("(") + 1,query.indexOf(")")).trim();
-        String[] values = query.split(",");
+        String[] rawValues = query.split(",");
+        ArrayList<String> values = new ArrayList<>();
 
-        for(int i = 0; i < values.length; i++){
-                values[i] = values[i].replace("'", "");
-                values[i] = values[i].trim();
+        for (String rawValue : rawValues) {
+            if(Utils.splitByWords(rawValue, Analyzer.getComparators(), false).size() > 1){
+                throw new SQLSyntaxException("COMPARATORS NOT SUPPORTED IN INSERTION VALUES");
+            }
+
+            ArrayList<String> tokens = Utils.getWhereTokens(rawValue);
+
+            if (tokens.size() == 1) {
+                values.add(tokens.get(0));
+                continue;
+            }
+
+            tokens = Where.infixToPostfix(tokens);
+            Tree.Node root = Where.createTree(tokens);
+            values.add(Where.evaluateSubTree(root));
         }
 
-        return new ArrayList<>(Arrays.asList(values));
+        return values;
     }
 }

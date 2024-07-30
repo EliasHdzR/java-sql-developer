@@ -326,4 +326,76 @@ public class Where {
 
         throw new SQLSyntaxException("UNRECOGNIZED VALUES IN WHERE STATEMENT: " + nodeValue);
     }
+
+
+    /**
+     * ///////////////////////////////////////////////////////////////
+     * ///////////////////////////////////////////////////////////////
+     * ///// FUNCTIONS FOR STATEMENTS OTHER THAN SELECT OR WHERE /////
+     * ///////////////////////////////////////////////////////////////
+     * ///////////////////////////////////////////////////////////////
+     * These functions do not contemplate the usage of table fields, only literals.
+     */
+
+    public static String evaluateSubTree(Tree.Node root) throws SQLSyntaxException, UnsupportedOperationException {
+        if (root == null) {
+            return "NULL";
+        }
+
+        if(root.left == null || root.right == null){
+            return root.value;
+        }
+
+        Double aux = null;
+        root.left.value = evaluateSubTree(root.left);
+        root.right.value = evaluateSubTree(root.right);
+
+        if(!Analyzer.getOperators().contains(root.left.value) && !Analyzer.getOperators().contains(root.right.value)){
+            aux = evaluateOperation(root.value, root.left.value, root.right.value);
+        }
+
+        if(aux != null){
+            if (aux == aux.intValue()) {
+                int value = aux.intValue();
+                return Integer.toString(value);
+            }
+            return aux.toString();
+        } else {
+            return "NULL";
+        }
+    }
+
+    private static double evaluateOperation(String operator, String left, String right) throws SQLSyntaxException, UnsupportedOperationException {
+        Double leftValue, rightValue;
+        try {
+            leftValue = Double.parseDouble(left);
+            rightValue = Double.parseDouble(right);
+        } catch (NumberFormatException e){
+            throw new SQLSyntaxException("NUMERIC VALUES ONLY");
+        }
+
+        switch (operator){
+            case "DIV":
+                if(rightValue == 0){
+                    throw new ArithmeticException("DIVISION BY ZERO");
+                }
+                double value = leftValue / rightValue;
+                return Math.floor(value);
+            case "/":
+                if(rightValue == 0){
+                    throw new ArithmeticException("DIVISION BY ZERO");
+                }
+                return leftValue / rightValue;
+            case "-":
+                return leftValue - rightValue;
+            case "+":
+                return leftValue + rightValue;
+            case "*":
+                return leftValue * rightValue;
+            case "%": case "MOD":
+                return leftValue % rightValue;
+            default:
+                throw new UnsupportedOperationException("OPERATION NOT SUPPORTED");
+        }
+    }
 }
