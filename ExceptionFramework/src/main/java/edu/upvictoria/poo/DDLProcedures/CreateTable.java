@@ -33,6 +33,12 @@ public class CreateTable {
 
         try {
             tableName = cleanedLine.substring(0, cleanedLine.indexOf("(")).trim();
+
+            String pattern = "^[a-zA-Z][a-zA-Z0-9_]*$";
+            if(!tableName.matches(pattern)){
+                throw new SQLSyntaxException("INVALID TABLE NAME");
+            }
+
             cleanedLine = cleanedLine.substring(cleanedLine.indexOf("(")).trim();
         } catch (StringIndexOutOfBoundsException e) {
             throw new SQLSyntaxException("MALFORMED STATEMENT: TABLE NAME NOT FOUND");
