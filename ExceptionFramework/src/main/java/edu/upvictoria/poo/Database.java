@@ -35,6 +35,14 @@ public class Database {
         return tables;
     }
 
+    public ArrayList<String> getTableNames() {
+        ArrayList<String> tableNames = new ArrayList<>();
+        for (Table table : tables) {
+            tableNames.add(table.getTableName());
+        }
+        return tableNames;
+    }
+
     public void printTableNames(){
         for(Table table : this.tables){
             System.out.println("\t" + table.getTableName());

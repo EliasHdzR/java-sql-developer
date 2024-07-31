@@ -43,7 +43,7 @@ public class Table {
             String line;
 
             while((line = br.readLine()) != null){
-                String[] rowValues = line.split(",");
+                String[] rowValues = line.split(",",-1);
 
                 if(columnsId){
                     for (String rowValue : rowValues) {
@@ -141,7 +141,7 @@ public class Table {
      ////////////////////////////////////////////
      */
 
-    public void appendDataToTable(ArrayList<String> data, ArrayList<String> columnNames) throws TableNotFoundException {
+    public void appendDataToTable(ArrayList<String> data, ArrayList<Column> columns) throws TableNotFoundException {
         ArrayList<Object> newData = new ArrayList<>();
 
         for(int i = 0; i < this.columns.size(); i++){
@@ -150,7 +150,8 @@ public class Table {
 
         int j = 0;
 
-        for(String columnName : columnNames){
+        for(Column column : columns){
+            String columnName = column.getName();
             for(int i = 0; i < this.columns.size(); i++){
                 Column aux = this.columns.get(i);
                 if(columnName.equals(aux.getName())){
@@ -180,7 +181,11 @@ public class Table {
 
             for(int i = 0; i < this.columns.size(); i++){
                 Column column = this.columns.get(i);
-                line.append(column.getName()).append(" ").append(column.getType()).append(" ").append(column.getConstraint());
+                line.append(column.getName()).append(" ").append(column.getType());
+
+                if(!column.getConstraint().isEmpty()){
+                    line.append(" ").append(column.getConstraint());
+                }
 
                 if(i != this.columns.size()-1){
                     line.append(",");
