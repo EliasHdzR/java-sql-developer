@@ -1,5 +1,6 @@
 package edu.upvictoria.poo.DMLProcedures;
 
+import edu.upvictoria.poo.Analyzer;
 import edu.upvictoria.poo.DMLProcedures.Where.Tree;
 import edu.upvictoria.poo.DMLProcedures.Where.Where;
 import edu.upvictoria.poo.Database;
@@ -40,12 +41,9 @@ public class Update {
         String cleanedLine = Utils.clean(query);
         ArrayList<String> tokensWithoutKeywords = Utils.splitByWords(cleanedLine, validKeywords, false);
         ArrayList<String> setTokens, whereTokens;
-        ArrayList<Integer> columnsToModify = new ArrayList<>();
         ArrayList<ArrayList <Object>> dataToModify, dataToModifyCopy;
 
         Table table = database.getTableByName(tokensWithoutKeywords.get(0));
-        String setClausule = tokensWithoutKeywords.get(1);
-        setTokens = parseSetClausule(setClausule);
 
         if(validKeywords.contains("WHERE")){
             whereTokens = Utils.getWhereTokens(tokensWithoutKeywords.get(2));
@@ -57,24 +55,35 @@ public class Update {
         }
 
         dataToModifyCopy = new ArrayList<>(dataToModify);
+        String setClausule = tokensWithoutKeywords.get(1);
+        ArrayList<Integer> columnsToModifyPos = new ArrayList<>();
+        int counter = 0;
 
-        // se obtienen las posiciones en el array de las columnas
-        for(int i = 0; i < setTokens.size(); i+=2){
-            columnsToModify.add(table.getColumnPos(setTokens.get(i)));
-        }
+        for(ArrayList <Object> rowToModify : dataToModifyCopy){
+            setTokens = parseSetClausule(setClausule, rowToModify, table);
 
-        int i = 1, counter = 0;
-        for(ArrayList<Object> datum : dataToModify){
-            for(Integer columnPosition : columnsToModify){
-                datum.set(columnPosition, setTokens.get(i));
-                i += 2;
+            // se obtienen las posiciones en el array de las columnas
+            for(int i = 0; i < setTokens.size(); i+=2){
+                int aux = table.getColumnPos(setTokens.get(i));
+                if(aux == -1){
+                    throw new TableNotFoundException("COLUMN " + setTokens.get(i) + " DOES NOT EXISTS");
+                }
+                columnsToModifyPos.add(aux);
             }
-            i = 1;
+
+            // segun las columnas a modificar, se actualizan los campos con esas posiciones con los nuevos datos
+            int aux = 1;
+            for (Integer columnPosition : columnsToModifyPos) {
+                rowToModify.set(columnPosition, setTokens.get(aux));
+                aux += 2;
+            }
+
             counter++;
+            columnsToModifyPos.clear();
         }
 
         table.updateData(dataToModifyCopy, dataToModify);
-        System.out.println(counter + " ROWS UPDATED");
+        System.out.println(counter + " ROW(S) UPDATED");
     }
 
     /**
@@ -84,7 +93,7 @@ public class Update {
      * @return Array con la columna y el valor a modificar, siempre es un numero par
      * @throws SQLSyntaxException Cuando se haya escrito mal la sintaxis de la clausula
      */
-    public ArrayList<String> parseSetClausule (String setClausule) throws SQLSyntaxException {
+    public ArrayList<String> parseSetClausule (String setClausule, ArrayList <Object> rowToModify, Table table) throws SQLSyntaxException {
         ArrayList<String> setTokens = new ArrayList<>();
         String[] rawAssignations = setClausule.split(",");
 
@@ -105,6 +114,15 @@ public class Update {
             if((!splitAssignments[1].startsWith("'") && splitAssignments[1].endsWith("'"))
                 || (splitAssignments[1].startsWith("'") && !splitAssignments[1].endsWith("'"))){
                 throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
+            }
+
+            // comprobar si el valor derecho tiene operadores aritmeticos
+            ArrayList<String> tokens = Utils.splitByWords(splitAssignments[1], Analyzer.getOperators(), true);
+
+            if(tokens.size() > 1){
+                tokens = Where.infixToPostfix(tokens);
+                Tree.Node root = Where.createTree(tokens);
+                splitAssignments[1] = Where.evaluateSubTree(root, rowToModify, table);
             }
 
             setTokens.add(splitAssignments[0]);

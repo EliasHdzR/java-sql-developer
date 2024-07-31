@@ -198,6 +198,10 @@ public class Table {
 
             for(ArrayList<Object> row : this.data){
                 for(int i = 0; i < row.size(); i++){
+                    if(row.get(i).equals("NULL")){
+                        row.set(i,"");
+                    }
+
                     line.append(row.get(i));
 
                     if(i != row.size()-1){

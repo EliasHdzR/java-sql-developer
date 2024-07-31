@@ -252,7 +252,7 @@ public class Where {
             return root.value;
         }
 
-        Number aux = null;
+        Double aux = null;
         root.left.value = evaluateSubTree(root.left, row, table);
         root.right.value = evaluateSubTree(root.right, row, table);
 
@@ -261,13 +261,17 @@ public class Where {
         }
 
         if(aux != null){
+            if (aux == aux.intValue()) {
+                int value = aux.intValue();
+                return Integer.toString(value);
+            }
             return aux.toString();
         } else {
             return "NULL";
         }
     }
 
-    private static Number evaluateOperation(String operator, String left, String right, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
+    private static Double evaluateOperation(String operator, String left, String right, ArrayList<Object> row, Table table) throws SQLSyntaxException, UnsupportedOperationException {
         Column leftCol = table.getColumnByName(left);
         Column rightCol = table.getColumnByName(right);
         Double leftValue = getValue(left, row, table, leftCol);
@@ -284,7 +288,7 @@ public class Where {
                     throw new ArithmeticException("DIVISION BY ZERO");
                 }
                 value = leftValue / rightValue;
-                return (int) value;
+                return Math.floor(value);
             case "/":
                 if(rightValue == 0){
                     throw new ArithmeticException("DIVISION BY ZERO");
