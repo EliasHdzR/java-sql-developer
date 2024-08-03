@@ -2,6 +2,7 @@ package edu.upvictoria.poo.DMLProcedures.Where;
 
 import edu.upvictoria.poo.Analyzer;
 import edu.upvictoria.poo.Column;
+import edu.upvictoria.poo.Function;
 import edu.upvictoria.poo.Table;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 
@@ -91,9 +92,7 @@ public class Where {
         }
 
         ArrayList<ArrayList<Object>> results = new ArrayList<>();
-
         Tree.Node auxRoot = new Tree.Node(root);
-
         for(ArrayList<Object> row : data) {
             if(evaluateRowInTree(root, row, table)){
                 results.add(row);
@@ -113,6 +112,14 @@ public class Where {
 
         if(Analyzer.getOperators().contains(root.right.value)){
             root.right.value = evaluateSubTree(root.right, row, table);
+        }
+
+        if(Function.analyzeNode(root.left.value)){
+            root.left.value = Function.evaluateFunction(root.left.value, row, table, true);
+        }
+
+        if(Function.analyzeNode(root.right.value)){
+            root.right.value = Function.evaluateFunction(root.right.value, row, table, true);
         }
 
         if(!Analyzer.getComparators().contains(root.left.value) && !Analyzer.getComparators().contains(root.right.value)
@@ -198,7 +205,7 @@ public class Where {
         }
     }
 
-    private static String getString(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
+    public static String getString(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
         if(nodeValue.startsWith("'") && nodeValue.endsWith("'")){
             return nodeValue.substring(1, nodeValue.length() - 1);
         }
@@ -249,7 +256,11 @@ public class Where {
         }
 
         if(root.left == null || root.right == null){
-            return root.value;
+            if(Function.analyzeNode(root.value)){
+                return Function.evaluateFunction(root.value, row, table, true);
+            } else {
+                return root.value;
+            }
         }
 
         Double aux = null;
@@ -307,7 +318,7 @@ public class Where {
         }
     }
 
-    private static Double getValue(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
+    public static Double getValue(String nodeValue, ArrayList<Object> row, Table table, Column col) throws SQLSyntaxException {
         try {
             return Double.parseDouble(nodeValue);
         } catch (NumberFormatException e){

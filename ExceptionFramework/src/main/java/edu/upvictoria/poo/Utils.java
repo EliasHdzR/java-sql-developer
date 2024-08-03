@@ -42,10 +42,12 @@ public class Utils {
     public static ArrayList<String> getWhereTokens(String line) throws SQLSyntaxException, IndexOutOfBoundsException {
         line = line.replaceAll("<>","!=");
         line = line.replaceAll("\\^=","!=");
+        int functionCount = 0;
 
         // si no agrego espacios se van a romper palabras como 'CORREO'
         ArrayList<String> keywords = new ArrayList<>(Analyzer.getComparators());
         keywords.addAll(Analyzer.getOperators());
+        keywords.addAll(Analyzer.getFunctions());
         keywords.set(0," AND ");
         keywords.set(1," OR ");
 
@@ -56,6 +58,14 @@ public class Utils {
                     || (token.startsWith("'") && !token.endsWith("'"))) {
                 throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
             }
+
+            if(Analyzer.getFunctions().contains(token)) {
+                functionCount++;
+            }
+        }
+
+        if(functionCount > 0){
+            tokens = convertFunctionParentheses(tokens, functionCount);
         }
 
         return tokens;
@@ -159,5 +169,63 @@ public class Utils {
         }
 
         return tokens;
+    }
+
+    /**
+     * Las sintaxis de las funciones siempre es nombre(parametro), el problema es que los '()' de la función estorban
+     * cuando quiero convertir una operacion de infix a postix debido a la jerarquía de operaciones por lo que las
+     * convierto a '[]' para que no haya problemas
+     * @param tokens
+     * @param functionsCount
+     * @return Un array list de string con los paréntesis correspondientes a las funciones convertidos a corchetes.   ( -> [
+     * @throws SQLSyntaxException
+     */
+    public static ArrayList<String> convertFunctionParentheses(ArrayList<String> tokens, int functionsCount) throws SQLSyntaxException {
+        ArrayList<String> newTokens = new ArrayList<>();
+        String newToken = "";
+        int counter = 0, changes = 0;
+
+        for(int i = 1; i < tokens.size(); i++){
+            String lastToken = tokens.get(i-1);
+            String currentToken = tokens.get(i);
+
+            if(currentToken.equals("(") && Analyzer.getFunctions().contains(lastToken)){
+                tokens.set(i,"[");
+                newToken += tokens.get(i-1);
+                counter++;
+                changes++;
+            }
+
+            if(currentToken.equals(")")){
+                for(int j = 0; j < counter; j++){
+                    if(tokens.get(i+j).equals(")")){
+                        tokens.set(i+j,"]");
+                        changes++;
+                        newToken += tokens.get(i+j);
+                        i = i+j;
+                    } else {
+                        throw new SQLSyntaxException("UNMATCHED PARENTHESES");
+                    }
+                }
+                newTokens.add(newToken);
+                newToken = "";
+                counter = 0;
+                continue;
+            }
+
+            if(counter == 0 && !Analyzer.getFunctions().contains(currentToken)){
+                newTokens.add(tokens.get(i));
+            } else if (counter > 0 && !Analyzer.getFunctions().contains(currentToken)){
+                newToken += tokens.get(i);
+            }
+        }
+
+        // siempre va a haber una cantidad de cambios igual al doble de funciones porque cada funcion
+        // tiene un par de parentesis que le corresponden
+        if(changes/2 != functionsCount){
+            throw new SQLSyntaxException("UNMATCHED PARENTHESES");
+        }
+
+        return newTokens;
     }
 }

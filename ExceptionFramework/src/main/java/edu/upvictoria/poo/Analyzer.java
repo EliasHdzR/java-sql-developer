@@ -40,6 +40,10 @@ public class Analyzer {
             "NOT NULL","PRIMARY KEY","FOREIGN KEY","NULL"
     ));
 
+    private static final ArrayList<String> functions = new ArrayList<>(List.of(
+            "UPPER","LOWER","FLOOR","CEIL","ROUND","RAND","MIN","MAX","SUM","AVG"
+    ));
+
     private Database database = new Database();
 
     private final Insertion insertion = new Insertion();
@@ -199,6 +203,10 @@ public class Analyzer {
 
     public static ArrayList<String> getOperators() {
         return operators;
+    }
+
+    public static ArrayList<String> getFunctions() {
+        return functions;
     }
 
     public void refreshDB(File file) throws FileSystemException{

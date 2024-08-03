@@ -87,12 +87,10 @@ public class Reader {
             }
         }
 
-        // Lanzar excepción si la cantidad de comillas simples es impar
         if (quoteCount % 2 != 0) {
             throw new SQLSyntaxException("UNMATCHED SINGLE QUOTE (')");
         }
 
-        // Patrón para encontrar textos entre comillas simples
         Pattern pattern = Pattern.compile("'([^']*)'");
         Matcher matcher = pattern.matcher(query);
 
