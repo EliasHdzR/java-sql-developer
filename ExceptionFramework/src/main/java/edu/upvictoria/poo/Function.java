@@ -110,7 +110,12 @@ public class Function {
 
         // hay que checar si el parámetro es una operacion aritmetica
         String parameter = line.substring(0, line.indexOf("]")).trim();
-        ArrayList<String> tokens = Utils.splitByWords(parameter, Analyzer.getOperators(), true);
+
+        ArrayList<String> operators = new ArrayList<>(Analyzer.getOperators());
+        operators.add("(");
+        operators.add(")");
+
+        ArrayList<String> tokens = Utils.splitByWords(parameter, operators, true);
         if(tokens.size() > 1){
             tokens = Where.infixToPostfix(tokens);
             Tree.Node root = Where.createTree(tokens);

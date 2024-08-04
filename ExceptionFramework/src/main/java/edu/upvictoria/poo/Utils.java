@@ -2,9 +2,7 @@ package edu.upvictoria.poo;
 
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -181,47 +179,59 @@ public class Utils {
      * @throws SQLSyntaxException
      */
     public static ArrayList<String> convertFunctionParentheses(ArrayList<String> tokens, int functionsCount) throws SQLSyntaxException {
+        Stack<Character> openings = new Stack<>();
         ArrayList<String> newTokens = new ArrayList<>();
-        String newToken = "";
-        int counter = 0, changes = 0;
+        String temp = "";
+        int changes = 0;
 
-        for(int i = 1; i < tokens.size(); i++){
-            String lastToken = tokens.get(i-1);
+        // este for compara las posiciones de los parentesis de las funciones y de los parentesis usados para
+        // operaciones aritmeticas
+        for(int i = 0; i < tokens.size(); i++){
+            String lastToken;
+            if(i-1 < 0){
+                lastToken = "";
+            } else {
+                lastToken = tokens.get(i-1);
+            }
+
             String currentToken = tokens.get(i);
 
             if(currentToken.equals("(") && Analyzer.getFunctions().contains(lastToken)){
                 tokens.set(i,"[");
-                newToken += tokens.get(i-1);
-                counter++;
+                openings.push('[');
+                temp += tokens.get(i-1);
                 changes++;
             }
 
-            if(currentToken.equals(")")){
-                for(int j = 0; j < counter; j++){
-                    if(tokens.get(i+j).equals(")")){
-                        tokens.set(i+j,"]");
-                        changes++;
-                        newToken += tokens.get(i+j);
-                        i = i+j;
-                    } else {
-                        throw new SQLSyntaxException("UNMATCHED PARENTHESES");
-                    }
-                }
-                newTokens.add(newToken);
-                newToken = "";
-                counter = 0;
-                continue;
+            if(currentToken.equals("(") && !Analyzer.getFunctions().contains(lastToken)){
+                openings.push('(');
             }
 
-            if(counter == 0 && !Analyzer.getFunctions().contains(currentToken)){
-                newTokens.add(tokens.get(i));
-            } else if (counter > 0 && !Analyzer.getFunctions().contains(currentToken)){
-                newToken += tokens.get(i);
+            if(currentToken.equals(")")){
+                char c = openings.peek();
+                if(c == '['){
+                    tokens.set(i,"]");
+                    changes++;
+                }
+                openings.pop();
+
+                if(!openings.contains('[')){
+                    temp += tokens.get(i);
+                    newTokens.add(temp);
+                    temp = "";
+                    continue;
+                }
+            }
+
+            if(!Analyzer.getFunctions().contains(currentToken)){
+                if(openings.contains('[')){
+                    temp += tokens.get(i);
+                } else {
+                    newTokens.add(tokens.get(i));
+                }
             }
         }
 
-        // siempre va a haber una cantidad de cambios igual al doble de funciones porque cada funcion
-        // tiene un par de parentesis que le corresponden
         if(changes/2 != functionsCount){
             throw new SQLSyntaxException("UNMATCHED PARENTHESES");
         }
