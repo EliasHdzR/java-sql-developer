@@ -27,6 +27,7 @@ public class Function {
         ArrayList<Function> foundFunctions = new ArrayList<>();
         Function temp;
         String result = "";
+        boolean hasGroupFunction = false;
 
         do {
             String functionName = line.substring(0, line.indexOf("[")).trim();
@@ -34,10 +35,18 @@ public class Function {
                 throw new SQLSyntaxException("UNDEFINED FUNCTION " + functionName);
             }
 
+            if(Analyzer.getMultipleRowFunctions().contains(functionName)){
+                hasGroupFunction = true;
+            }
+
             temp = new Function(functionName);
             foundFunctions.add(temp);
             line = line.substring(line.indexOf("[") + 1);
         } while (line.contains("["));
+
+        if(hasGroupFunction && foundFunctions.size() > 1){
+            throw new SQLSyntaxException("BAD USAGE OF GROUP FUNCTIONS");
+        }
 
         for(int i = foundFunctions.size() - 1; i >= 0; i--){
             temp = foundFunctions.get(i);
@@ -494,7 +503,7 @@ public class Function {
         int count = 0;
         for(ArrayList<Object> row : table.getData()){
             String value = row.get(colPos).toString();
-            if(value != null){
+            if(value != null && !value.isBlank()){
                 count++;
             }
         }
@@ -554,5 +563,156 @@ public class Function {
         return columnData;
     }
 
-    // todo: checar si los campos vacios del csv no la cagan en las funciones genericas
+    /*
+      ////////////////////////////
+      //// OTRAS FUNCIONES ///////
+      ////////////////////////////
+      Estas funciones no contemplan el uso de columnas de la tabla ni de
+      group functions
+     */
+
+    /**
+     * Todas las funciones solamente reciben un parámetro, pero pueden ser concatenadas, por lo que esta función
+     * parsea las funciones y busca si estas pueden estar concatenadas o no.
+     * @param line String sin parsear que contiene a las funciones
+     * @return Un array con todas las funciones reconocidas, solamente la ultima función del array tiene su parámetro
+     * definido
+     * @throws SQLSyntaxException si algún nombre parseado no pertenece a una función definida
+     */
+    public static String parseFunctions(String line) throws SQLSyntaxException {
+        ArrayList<Function> foundFunctions = new ArrayList<>();
+        Function temp;
+        String result = "";
+
+        do {
+            String functionName = line.substring(0, line.indexOf("[")).trim();
+            if(!Analyzer.getNumericFunctions().contains(functionName)){
+                throw new SQLSyntaxException("UNSUPORTED FUNCTION " + functionName);
+            }
+
+            temp = new Function(functionName);
+            foundFunctions.add(temp);
+            line = line.substring(line.indexOf("[") + 1);
+        } while (line.contains("["));
+
+        for(int i = foundFunctions.size() - 1; i >= 0; i--){
+            temp = foundFunctions.get(i);
+            String added = line.substring(0, line.indexOf("]")).trim();
+            String parameter = result + added;
+            line = line.substring(line.indexOf(added)+added.length()+1).trim();
+
+            ArrayList<String> operators = new ArrayList<>(Analyzer.getOperators());
+            operators.add("(");
+            operators.add(")");
+
+            // hay que checar si el parámetro es una operacion aritmetica
+            ArrayList<String> tokens = Utils.splitByWords(parameter, operators, true);
+            if(tokens.size() > 1){
+                tokens = Where.infixToPostfix(tokens);
+                Tree.Node root = Where.createTree(tokens);
+                parameter = Where.evaluateSubTree(root);
+            }
+
+            temp.setParameter(parameter);
+            result = evaluateFunction(temp);
+            if(i >= 1){
+                foundFunctions.get(i-1).setParameter(result);
+            }
+        }
+
+        return result;
+    }
+
+    public static String evaluateFunction(Function function) throws SQLSyntaxException {
+        String result;
+
+        switch (function.getName()) {
+            case "UPPER":
+                result = handleUPPER(function.getParameter());
+                break;
+            case "LOWER":
+                result = handleLOWER(function.getParameter());
+                break;
+            case "FLOOR":
+                result = handleFLOOR(function.getParameter());
+                break;
+            case "CEIL":
+                result = handleCEIL(function.getParameter());
+                break;
+            case "ROUND":
+                result = handleROUND(function.getParameter());
+                break;
+            case "RAND":
+                result = handleRAND(function.getParameter());
+                break;
+            default:
+                throw new SQLSyntaxException("UNSUPPORTED FUNCTION IN STATEMENT");
+        }
+
+        return result;
+    }
+
+    public static String handleUPPER(String value) {
+        if(value.startsWith("'") && value.endsWith("'")){
+            value = value.substring(1, value.length()-1);
+        }
+
+        return value.toUpperCase();
+    }
+
+    public static String handleLOWER(String value) {
+        if(value.startsWith("'") && value.endsWith("'")){
+            value = value.substring(1, value.length()-1);
+        }
+
+        return value.toLowerCase();
+    }
+
+    public static String handleFLOOR(String value) throws SQLSyntaxException {
+        double doubleValue;
+        try {
+            doubleValue = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            throw new SQLSyntaxException("UNPARSEABLE NUMBER FOUND: " + value);
+        }
+
+        int iValue = (int) Math.floor(doubleValue);
+        return Integer.toString(iValue);
+    }
+
+    public static String handleCEIL(String value) throws SQLSyntaxException {
+        double doubleValue;
+        try {
+            doubleValue = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            throw new SQLSyntaxException("UNPARSEABLE NUMBER FOUND: " + value);
+        }
+
+        int iValue = (int) Math.ceil(doubleValue);
+        return Integer.toString(iValue);
+    }
+
+    public static String handleROUND(String value) throws SQLSyntaxException {
+        double doubleValue;
+        try {
+            doubleValue = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            throw new SQLSyntaxException("UNPARSEABLE NUMBER FOUND: " + value);
+        }
+
+        int iValue = (int) Math.round(doubleValue);
+        return Integer.toString(iValue);
+    }
+
+    public static String handleRAND(String maxValue) throws SQLSyntaxException {
+        double doubleValue;
+        try {
+            doubleValue = Double.parseDouble(maxValue);
+        } catch (NumberFormatException e) {
+            throw new SQLSyntaxException("UNPARSEABLE NUMBER FOUND: " + maxValue);
+        }
+
+        int iValue = (int) (Math.random() * (doubleValue + 1));
+        return Integer.toString(iValue);
+    }
 }

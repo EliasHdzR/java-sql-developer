@@ -74,12 +74,17 @@ public class Insertion {
             throw new SQLSyntaxException("SYNTAX ERROR AT INSERTION VALUES");
         }
 
-        query = query.substring(query.indexOf("(") + 1,query.indexOf(")")).trim();
+        query = query.substring(1,query.length()-1).trim();
         String[] rawValues = query.split(",");
         ArrayList<String> values = new ArrayList<>();
+        ArrayList<String> comparators = new ArrayList<>(Analyzer.getComparators());
+        comparators.remove("(");
+        comparators.remove(")");
+        comparators.remove("AND");
+        comparators.remove("OR");
 
         for (String rawValue : rawValues) {
-            if(Utils.splitByWords(rawValue, Analyzer.getComparators(), false).size() > 1){
+            if(Utils.splitByWords(rawValue, comparators, true).size() > 1){
                 throw new SQLSyntaxException("COMPARATORS NOT SUPPORTED IN INSERTION VALUES");
             }
 
@@ -90,6 +95,11 @@ public class Insertion {
             ArrayList<String> tokens = Utils.getWhereTokens(rawValue);
 
             if (tokens.size() == 1) {
+                if(Function.analyzeNode(tokens.get(0))){
+                    values.add(Function.parseFunctions(tokens.get(0)));
+                    continue;
+                }
+
                 values.add(tokens.get(0));
                 continue;
             }

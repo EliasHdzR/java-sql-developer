@@ -1,11 +1,8 @@
 package edu.upvictoria.poo.DMLProcedures;
 
-import edu.upvictoria.poo.Analyzer;
+import edu.upvictoria.poo.*;
 import edu.upvictoria.poo.DMLProcedures.Where.Tree;
 import edu.upvictoria.poo.DMLProcedures.Where.Where;
-import edu.upvictoria.poo.Database;
-import edu.upvictoria.poo.Table;
-import edu.upvictoria.poo.Utils;
 import edu.upvictoria.poo.exceptions.SQLSyntaxException;
 import edu.upvictoria.poo.exceptions.TableNotFoundException;
 
@@ -117,12 +114,18 @@ public class Update {
             }
 
             // comprobar si el valor derecho tiene operadores aritmeticos
-            ArrayList<String> tokens = Utils.splitByWords(splitAssignments[1], Analyzer.getOperators(), true);
+            ArrayList<String> tokens = Utils.getWhereTokens(splitAssignments[1]);
 
             if(tokens.size() > 1){
                 tokens = Where.infixToPostfix(tokens);
                 Tree.Node root = Where.createTree(tokens);
                 splitAssignments[1] = Where.evaluateSubTree(root, rowToModify, table);
+            }
+
+            if(tokens.size() == 1){
+                if(Function.analyzeNode(tokens.get(0))){
+                    splitAssignments[1] = Function.parseFunctions(tokens.get(0));
+                }
             }
 
             setTokens.add(splitAssignments[0]);

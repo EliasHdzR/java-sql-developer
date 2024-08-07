@@ -358,7 +358,11 @@ public class Where {
         }
 
         if(root.left == null || root.right == null){
-            return root.value;
+            if(Function.analyzeNode(root.value)){
+                return Function.parseFunctions(root.value);
+            } else {
+                return root.value;
+            }
         }
 
         Double aux = null;

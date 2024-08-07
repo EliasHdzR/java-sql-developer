@@ -245,6 +245,14 @@ public class Table {
     }
 
     public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) throws SQLSyntaxException {
+        Table tempTable;
+        try {
+            tempTable = new Table(this.tableFile);
+            tempTable.setData(data);
+        } catch (FileSystemException e) {
+            throw new SQLSyntaxException(e.getMessage());
+        }
+
         ArrayList<ArrayList<Object>> dataToPrint = new ArrayList<>();
 
         for (ArrayList<Object> row : data) {
@@ -275,7 +283,7 @@ public class Table {
                 Column column = columns.get(j);
                 Tree.Node colOperation = new Tree.Node(column.getOperation());
                 if(column.getOperation() != null){
-                    rowToPrint.set(j, Where.evaluateSubTree(colOperation, originalRow, this));
+                    rowToPrint.set(j, Where.evaluateSubTree(colOperation, originalRow, tempTable));
                 }
             }
         }
