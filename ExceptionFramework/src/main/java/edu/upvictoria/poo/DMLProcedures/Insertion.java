@@ -47,63 +47,6 @@ public class Insertion {
         table.appendDataToTable(insertionValues,insertionColumns);
     }
 
-    /*public void handle() throws TableNotFoundException, SQLSyntaxException, InsuficientDataProvidedException, NoSuchFileException, ColumnDoesNotMatch, StringIndexOutOfBoundsException {
-        String cleanedLine, cleanedLine_v2, cleanedLine_v3;
-        ArrayList<String> insertionColumns, insertionData;
-        ArrayList<Column> tableColumns = new ArrayList<>();
-        Table table = null;
-        boolean tableExists = false, columnFound = false;
-
-        cleanedLine = Utils.clean(query, keyword);
-        int VALUEIndex = cleanedLine.indexOf("VALUES");
-
-        if(VALUEIndex == -1){
-            throw new StringIndexOutOfBoundsException("MISSING EXPRESSION");
-        }
-
-        cleanedLine_v2 = cleanedLine.substring(0,VALUEIndex-1);
-        insertionColumns = splitInsertionColumns(cleanedLine_v2);
-
-        cleanedLine_v3 = cleanedLine.substring(VALUEIndex + "VALUES ".length());
-        insertionData = splitInsertionValues(cleanedLine_v3);
-
-        if(insertionColumns.size()-1 != insertionData.size()){
-            throw new InsuficientDataProvidedException("DATA PROVIDED MISMATCH");
-        }
-
-        ArrayList<Table> tables = database.getTables();
-        for(Table tableF : tables) {
-            if(tableF.getTableName().equals(insertionColumns.get(0))){
-                tableExists = true;
-                insertionColumns.remove(0);
-                table = tableF;
-                tableColumns = tableF.getColumns();
-                break;
-            }
-        }
-
-        if(!tableExists){
-            throw new NoSuchFileException("TABLE DOES NOT EXISTS");
-        }
-
-        for(String insertionColumn : insertionColumns){
-            for(Column tableColumn : tableColumns){
-                if(tableColumn.getName().equals(insertionColumn)){
-                    columnFound = true;
-                    break;
-                }
-            }
-
-            if(!columnFound){
-                throw new ColumnDoesNotMatch("COLUMN DOES NOT MATCH: " + insertionColumn);
-            }
-
-            columnFound = false;
-        }
-
-        table.appendDataToTable(insertionData,insertionColumns);
-    }*/
-
     private ArrayList<Column> parseColumns(String query, Table table) throws SQLSyntaxException {
         ArrayList<Column> columns = new ArrayList<>();
 
@@ -122,7 +65,6 @@ public class Insertion {
                  throw new SQLSyntaxException("COLUMN " + values[i] + " DOES NOT EXIST IN TABLE " + table.getTableName());
              }
          }
-
 
          return columns;
     }

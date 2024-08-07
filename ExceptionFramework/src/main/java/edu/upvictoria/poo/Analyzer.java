@@ -40,8 +40,12 @@ public class Analyzer {
             "NOT NULL","PRIMARY KEY","FOREIGN KEY","NULL"
     ));
 
-    private static final ArrayList<String> functions = new ArrayList<>(List.of(
-            "UPPER","LOWER","FLOOR","CEIL","ROUND","RAND","MIN","MAX","SUM","AVG"
+    private static final ArrayList<String> numericFunctions = new ArrayList<>(List.of(
+            "UPPER","LOWER","FLOOR","CEIL","ROUND","RAND"
+    ));
+
+    private static final ArrayList<String> multipleRowFunctions = new ArrayList<>(List.of(
+            "MIN","MAX","SUM","AVG","DISTINCT","COUNT"
     ));
 
     private Database database = new Database();
@@ -205,7 +209,17 @@ public class Analyzer {
         return operators;
     }
 
-    public static ArrayList<String> getFunctions() {
+    public static ArrayList<String> getNumericFunctions() {
+        return numericFunctions;
+    }
+
+    public static ArrayList<String> getMultipleRowFunctions() {
+        return multipleRowFunctions;
+    }
+
+    public static ArrayList<String> getFunctions(){
+        ArrayList<String> functions = new ArrayList<>(Analyzer.getNumericFunctions());
+        functions.addAll(Analyzer.getMultipleRowFunctions());
         return functions;
     }
 

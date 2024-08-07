@@ -181,7 +181,7 @@ public class Utils {
     public static ArrayList<String> convertFunctionParentheses(ArrayList<String> tokens, int functionsCount) throws SQLSyntaxException {
         Stack<Character> openings = new Stack<>();
         ArrayList<String> newTokens = new ArrayList<>();
-        String temp = "";
+        StringBuilder temp = new StringBuilder();
         int changes = 0;
 
         // este for compara las posiciones de los parentesis de las funciones y de los parentesis usados para
@@ -199,7 +199,7 @@ public class Utils {
             if(currentToken.equals("(") && Analyzer.getFunctions().contains(lastToken)){
                 tokens.set(i,"[");
                 openings.push('[');
-                temp += tokens.get(i-1);
+                temp.append(tokens.get(i - 1));
                 changes++;
             }
 
@@ -216,16 +216,16 @@ public class Utils {
                 openings.pop();
 
                 if(!openings.contains('[')){
-                    temp += tokens.get(i);
-                    newTokens.add(temp);
-                    temp = "";
+                    temp.append(tokens.get(i));
+                    newTokens.add(temp.toString());
+                    temp = new StringBuilder();
                     continue;
                 }
             }
 
             if(!Analyzer.getFunctions().contains(currentToken)){
                 if(openings.contains('[')){
-                    temp += tokens.get(i);
+                    temp.append(tokens.get(i));
                 } else {
                     newTokens.add(tokens.get(i));
                 }

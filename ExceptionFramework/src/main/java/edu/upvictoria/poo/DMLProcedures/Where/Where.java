@@ -115,11 +115,11 @@ public class Where {
         }
 
         if(Function.analyzeNode(root.left.value)){
-            root.left.value = Function.evaluateFunction(root.left.value, row, table, true);
+            root.left.value = Function.parseFunctions(root.left.value, row, table);
         }
 
         if(Function.analyzeNode(root.right.value)){
-            root.right.value = Function.evaluateFunction(root.right.value, row, table, true);
+            root.right.value = Function.parseFunctions(root.right.value, row, table);
         }
 
         if(!Analyzer.getComparators().contains(root.left.value) && !Analyzer.getComparators().contains(root.right.value)
@@ -257,7 +257,7 @@ public class Where {
 
         if(root.left == null || root.right == null){
             if(Function.analyzeNode(root.value)){
-                return Function.evaluateFunction(root.value, row, table, true);
+                return Function.parseFunctions(root.value, row, table);
             } else {
                 return root.value;
             }
