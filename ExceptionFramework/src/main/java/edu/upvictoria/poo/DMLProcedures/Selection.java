@@ -24,7 +24,7 @@ public class Selection {
         this.query = query;
     }
 
-    public void handle() throws NoSuchFileException, TableNotFoundException, SQLSyntaxException, IndexOutOfBoundsException {
+    public ArrayList<ArrayList<String>> handle() throws NoSuchFileException, TableNotFoundException, SQLSyntaxException, IndexOutOfBoundsException {
         String cleanedLine = Utils.clean(query, keyword);
         String rawColumns = cleanedLine.substring(0,cleanedLine.indexOf("FROM")-1).trim();
         String selectedTable, whereLine = null;
@@ -67,7 +67,7 @@ public class Selection {
             columns = getSelectedColumns(table, rawColumns);
         }
 
-        table.printData(columns, wheredData);
+        return table.printData(columns, wheredData);
     }
 
     /**

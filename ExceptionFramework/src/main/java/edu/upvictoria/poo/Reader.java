@@ -10,6 +10,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Reader {
+    /**
+     * Este consoleReader lee continuamente el teclado desde la consola hasta que se ingrese un punto y coma
+     * @return
+     * @throws SQLSyntaxException
+     */
     public String consoleReader() throws SQLSyntaxException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
@@ -22,26 +27,7 @@ public class Reader {
                     continue;
                 }
 
-                if(input.toUpperCase().startsWith("USE")){
-                    String[] tokens = input.split(" ");
-                    tokens[0] = tokens[0].toUpperCase();
-                    StringBuilder builder = new StringBuilder();
-
-                    for (String token : tokens) {
-                        builder.append(token).append(" ");
-                    }
-
-                    inputLines.append(builder.toString().trim());
-                } else {
-                    input = formatInput2(input);
-                    inputLines.append(input.trim());
-                }
-
-                int index = input.indexOf(";");
-                int index2 = input.indexOf(";",index + 1);
-                if(index2 != -1){
-                    throw new SQLSyntaxException("SYNTAX ERROR AT COLUMN: " + index);
-                }
+                input = getString(input, inputLines);
 
                 if(input.endsWith(";")) {
                     break;
@@ -54,6 +40,57 @@ public class Reader {
         } catch (IOException e) {
             throw new SQLSyntaxException("SYNTAX ERROR FOUND: " + e.getMessage());
         }
+    }
+
+    /**
+     * Esta otra version de consoleReader recibe un input completo para poder parsearlo
+     * @param input
+     * @return
+     * @throws SQLSyntaxException
+     */
+    public String consoleReader(String input) throws SQLSyntaxException {
+        StringBuffer inputLines = new StringBuffer();
+
+        if(input.trim().isEmpty()){
+            throw new SQLSyntaxException("INVALID STATEMENT IN SELECTION");
+        }
+
+        try{
+            input = getString(input, inputLines);
+
+            if(!input.endsWith(";")) {
+                throw new SQLSyntaxException("MISSING SEMICOLON AT THE END");
+            }
+
+            inputLines = formatInput(inputLines);
+            return inputLines.toString();
+        } catch (Exception e) {
+            throw new SQLSyntaxException("UNPARSEABLE STATEMENT");
+        }
+    }
+
+    private String getString(String input, StringBuffer inputLines) throws SQLSyntaxException {
+        if(input.toUpperCase().startsWith("USE")){
+            String[] tokens = input.split(" ");
+            tokens[0] = tokens[0].toUpperCase();
+            StringBuilder builder = new StringBuilder();
+
+            for (String token : tokens) {
+                builder.append(token).append(" ");
+            }
+
+            inputLines.append(builder.toString().trim());
+        } else {
+            input = formatInput2(input);
+            inputLines.append(input.trim());
+        }
+
+        int index = input.indexOf(";");
+        int index2 = input.indexOf(";",index + 1);
+        if(index2 != -1){
+            throw new SQLSyntaxException("SYNTAX ERROR AT COLUMN: " + index);
+        }
+        return input;
     }
 
     public StringBuffer formatInput(StringBuffer input) throws SQLSyntaxException {

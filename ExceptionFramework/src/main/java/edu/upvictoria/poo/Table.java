@@ -244,7 +244,7 @@ public class Table {
         }
     }
 
-    public void printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) throws SQLSyntaxException {
+    public ArrayList<ArrayList <String>> printData(ArrayList<Column> columns, ArrayList<ArrayList<Object>> data) throws SQLSyntaxException {
         Table tempTable;
         try {
             tempTable = new Table(this.tableFile);
@@ -288,31 +288,30 @@ public class Table {
             }
         }
 
+        ArrayList<ArrayList <String>> selectedData = new ArrayList<>();
+        ArrayList<String> tableColumnNames = new ArrayList<>();
+
         // FINALMENTE IMPRESION DE LOS DATOS
         for (Column column : columns) {
             if (column.getAlias() == null) {
-                System.out.print("| " + column.getName() + "\t");
-            } else {
-                System.out.print("| " + column.getAlias() + "\t");
+                tableColumnNames.add(column.getName());
+                continue;
             }
+
+            tableColumnNames.add(column.getAlias());
         }
 
-        System.out.println("|");
-        for (int k = 0; k < columns.size(); k++) {
-            System.out.print("+------------");
-        }
-        System.out.println("+");
+        selectedData.add(tableColumnNames);
 
         for (ArrayList<Object> row : dataToPrint) {
-            for (Object value : row) {
-                System.out.print("| " + value.toString() + "\t");
+            ArrayList<String> rowStringValues = new ArrayList<>();
+            for(Object value : row){
+                rowStringValues.add(value.toString());
             }
-            System.out.println("|");
-            for (int k = 0; k < columns.size(); k++) {
-                System.out.print("+------------");
-            }
-            System.out.println("+");
+            selectedData.add(rowStringValues);
         }
+
+        return selectedData;
     }
 
     public void updateData(ArrayList<ArrayList<Object>> originalData, ArrayList<ArrayList<Object>> newData) throws TableNotFoundException {

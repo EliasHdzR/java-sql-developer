@@ -64,7 +64,7 @@ public class Analyzer {
      * @param line
      * @throws Exception
      */
-    public void analyzeSyntax(String line) throws Exception {
+    public ArrayList<ArrayList<String>> analyzeSyntax(String line) throws Exception {
         line = line.replaceAll("\n"," ");
         ArrayList<String> validKeywords = new ArrayList<>();
         boolean appears = false;
@@ -80,7 +80,7 @@ public class Analyzer {
                             Utils.hasValidKeywords(line, validKeywords);
                             File dbFile = handleUse(line, keyword);
                             refreshDB(dbFile);
-                            return;
+                            return null;
 
                         case "SHOW TABLES":
                             if (database.getDbFile() == null) {
@@ -89,7 +89,7 @@ public class Analyzer {
 
                             refreshDB(this.database.getDbFile());
                             this.database.printTableNames();
-                            return;
+                            return null;
 
                         case "CREATE TABLE":
                             if (database.getDbFile() == null) {
@@ -101,7 +101,7 @@ public class Analyzer {
                             creator.setQuery(line);
                             creator.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return null;
 
                         case "DROP TABLE":
                             if (database.getDbFile() == null) {
@@ -113,7 +113,7 @@ public class Analyzer {
                             dropper.setQuery(line);
                             dropper.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return null;
 
                         case "INSERT INTO":
                             if (database.getDbFile() == null) {
@@ -125,7 +125,7 @@ public class Analyzer {
                             insertion.setQuery(line);
                             insertion.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return null;
 
                         case "DELETE FROM":
                             if (database.getDbFile() == null) {
@@ -137,7 +137,7 @@ public class Analyzer {
                             deletion.setQuery(line);
                             deletion.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return null;
 
                         case "UPDATE":
                             if (database.getDbFile() == null) {
@@ -149,7 +149,7 @@ public class Analyzer {
                             update.setQuery(line);
                             update.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return null;
 
                         case "SELECT":
                             if (database.getDbFile() == null) {
@@ -167,9 +167,9 @@ public class Analyzer {
                             refreshDB(this.database.getDbFile());
                             selection.setDatabase(database);
                             selection.setQuery(line);
-                            selection.handle();
+                            ArrayList<ArrayList<String>> printableTable = selection.handle();
                             refreshDB(this.database.getDbFile());
-                            return;
+                            return printableTable;
                     }
 
                 } catch (StringIndexOutOfBoundsException e) {
@@ -187,6 +187,8 @@ public class Analyzer {
         if(!appears){
             throw new SQLSyntaxException("UNRECOGNIZED STATEMENTS");
         }
+
+        return null;
     }
 
     public static ArrayList<String> getKeywords() {
