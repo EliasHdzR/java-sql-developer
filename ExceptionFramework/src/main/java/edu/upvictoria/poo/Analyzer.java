@@ -217,6 +217,14 @@ public class Analyzer {
         return multipleRowFunctions;
     }
 
+    public Database getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(Database database) {
+        this.database = database;
+    }
+
     public static ArrayList<String> getFunctions(){
         ArrayList<String> functions = new ArrayList<>(Analyzer.getNumericFunctions());
         functions.addAll(Analyzer.getMultipleRowFunctions());
